@@ -84,15 +84,20 @@ void loop() {
     // parse raw command to see if this ID specifically received a command
     String command = String(packetBuffer);
     if (has_command(command) == true) {
+
       // print out specific command received for this ID
       Serial.println("Specific command recieved for ID " + ID);
-      float my_command[2];
+
       // parse command to get angle and burst velocity
+      float my_command[2];
       parse_command(command, my_command);
-      Serial.println("ang: " + String(my_command[0]));
-      Serial.println("v: " + String(my_command[1]));
+      float ang = my_command[0];
+      float velocity = my_command[1];
+      Serial.println("ang: " + String(ang));
+      Serial.println("v: " + String(velocity));
+
       // execute command
-      drive(my_command);
+      drive(ang, velocity);
     }
   }
   delay(50);
@@ -133,9 +138,7 @@ void parse_command(String& command, float ary[]) {
 
 ////////// drive helper methods //////////
 
-void drive(float my_command[2]) {
-  float ang = my_command[0];
-  float velocity = my_command[1];
+void drive(float ang, float velocity) {
   turn(ang);
   burst(velocity);
 }
