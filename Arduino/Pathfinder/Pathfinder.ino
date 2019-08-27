@@ -24,8 +24,8 @@ MMEmotor motorb  = MMEmotor(BIN1, BIN2, PWMB, STBY);
 MMEmotor motora  = MMEmotor(AIN1, AIN2, PWMA, STBY);
 
 // assign unique ID to robot
-const String ID = "4";
-const unsigned long ID_NUM = 4;
+const String ID = "1";
+const unsigned long ID_NUM = 1;
 
 // configure ESP, WiFi & UDP
 SoftwareSerial esp(2, 3);        // (RX, TX); enables communication with ESP
