@@ -1,27 +1,28 @@
 % General Parameters to set
-num_robots = 5;
+num_robots = 2;
 % Set superimposed field coordinate limits to 800x800
 x_axis_sz = 1024;
 y_axis_sz = 768;
 
 % Start and configure cameras
+imaqreset;
 cam1 = videoinput('winvideo', 1);
 triggerconfig(cam1, 'manual');
 start(cam1);
+
+% Create and open udp listeners for Arduino light level transmission
+fclose(instrfindall);
 
 % Create and open udp server to send commands to Arduinos
 u = udp('10.10.10.255', 8080);
 fopen(u);
 
-% Create and open udp listeners for Arduino light level transmission
-fclose(instrfindall)
-
 udpr = {};
 udpr{1} = udp('10.10.10.255', 'RemotePort', 8080, 'LocalPort', 8001, 'Timeout', 0.01);
 udpr{2} = udp('10.10.10.255', 'RemotePort', 8080, 'LocalPort', 8002, 'Timeout', 0.01);
-udpr{3} = udp('10.10.10.255', 'RemotePort', 8080, 'LocalPort', 8003, 'Timeout', 0.01);
-udpr{4} = udp('10.10.10.255', 'RemotePort', 8080, 'LocalPort', 8004, 'Timeout', 0.01);
-udpr{5} = udp('10.10.10.255', 'RemotePort', 8080, 'LocalPort', 8005, 'Timeout', 0.01);
+% udpr{3} = udp('10.10.10.255', 'RemotePort', 8080, 'LocalPort', 8003, 'Timeout', 0.01);
+% udpr{4} = udp('10.10.10.255', 'RemotePort', 8080, 'LocalPort', 8004, 'Timeout', 0.01);
+% udpr{5} = udp('10.10.10.255', 'RemotePort', 8080, 'LocalPort', 8005, 'Timeout', 0.01);
 
 % setup - only need to open address once
 for i = 1:size(udpr,2)
@@ -34,13 +35,11 @@ counter = 1;
 % configure waypoint matrix manually, or call MakeWaypoints
 waypoint_matrix = [50, 50, 90;
                    x_axis_sz-50, y_axis_sz-50, 90;
-                   x_axis_sz-50, 50, 90;
                   ];
-%               
-% waypoint_matrix(:, :, 2) = [400, 400, 90;
-%                             500, 400, 90;
-%                             450, 500, 90;
-%                            ];
+              
+waypoint_matrix(:, :, 2) = [400, 400, 90;
+                            500, 400, 90;
+                           ];
 %                        
 % waypoint_matrix(:, :, 3) = waypoint_matrix(:, :, 1);
 % num_waypoints = 2;
@@ -56,7 +55,7 @@ theta_tolerance = 180; %180 nullifies directional "pose" checking, instead check
 positions = [];
 fig_graph = figure;
 ax_graph = gca;
-pause(5);
+% pause(5);
 tic;
 
 % given 3D waypoint_matrix consisting of multiple 2D goto matrices,
