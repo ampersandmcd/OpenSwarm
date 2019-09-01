@@ -13,7 +13,6 @@
 // include user-defined code
 #include "include/Configuration.h"
 
-
 // create configuration object
 Configuration Config = *(new Configuration());
 
@@ -32,19 +31,10 @@ WiFiEspUDP Udp;
 
 void setup() 
 {
-
   // initialize communication between serial, ESP and wifi
   Serial.begin(Config.SerialBaud);
   ESP.begin(Config.ESPBaud);
   WiFi.init(&ESP);
-
-  // check for the presence of the shield:
-  /*int status = WiFi.status();
-  if (WiFi.status() == WL_NO_SHIELD) {
-    Serial.println("WiFi shield not present");
-    // don't continue:
-    while (true);
-  }*/
 
   // attempt to connect to WiFi network
   int status = WiFi.status();
@@ -56,6 +46,7 @@ void setup()
   }
   
   Debug("Connected to WiFi.");
+
   if (Config.Debug)
   {
     PrintWifiStatus();
@@ -70,42 +61,47 @@ void setup()
 void loop() {
   // if there's a UDP packet available, read it
   int packetSize = Udp.parsePacket();
-  if (packetSize) {
-    int len = Udp.read(Buffer, 255);
-    if (len > 0) {
-      Buffer[len] = 0;
+
+  if (packetSize > 0) 
+  {
+    // get length of incoming message
+    int length = Udp.read(Buffer, 255);
+
+    if (length > 0) 
+    {
+      // indicate end of incoming message in buffer
+      Buffer[length] = 0;
     }
-    // print out raw command received
-    Serial.print("Raw command: ");
-    Serial.println(Buffer);
+    
+    // store message in string for parsing
+    String message = String(Buffer);
+    Debug("\tRaw message received: " + message);
 
-    // parse raw command to see if this ID specifically received a command
-    String command = String(Buffer);
-    if (has_command(command) == true) {
+    // parse message and see if it contains relevant command
+    if (HasCommand(message)) 
+    {
+      // parse command to get angle and burst velocity for this ID
+      float command[2];
+      ParseCommand(message, command);
+      float angle = command[0];
+      float velocity = command[1];
 
-      // print out specific command received for this ID
-      Serial.println("Specific command recieved for ID " + String(Config.ID));
-
-      // parse command to get angle and burst velocity
-      float my_command[2];
-      parse_command(command, my_command);
-      float ang = my_command[0];
-      float velocity = my_command[1];
-      Serial.println("ang: " + String(ang));
-      Serial.println("v: " + String(velocity));
+      Debug("\tRobot ID: " + String(Config.ID));
+      Debug("\t\tAngle: " + String(angle));
+      Serial.println("\t\tVelocity: " + String(velocity));
 
       // execute command
-      drive(ang, velocity);
+      Drive(angle, velocity);
     }
   }
-  delay(50);
+  delay(Config.DelayInterval);
 }
 
 ////////// parsing helper methods //////////
 
 // check to see if this ID has received a valid command of the form
 // <start> . . . <ID>angle,velocity</ID> . . . <end>
-bool has_command(String& command) {
+bool HasCommand(String& command) {
   if(command.indexOf("<" + String(Config.ID) + ">") != -1 && command.indexOf("<start>") != -1 && command.indexOf("<end>") != -1) {
     return true;
   } else {
@@ -115,7 +111,7 @@ bool has_command(String& command) {
 
 // parses command for turn angle and velocity to be executed by robot from command of the form
 // <start> . . . <ID>angle,velocity</ID> . . . <end>
-void parse_command(String& command, float ary[]) {
+void ParseCommand(String& command, float ary[]) {
   String my_command = "";
   int start = command.indexOf("<" + String(Config.ID) + ">") + 2 + String(Config.ID).length();
   int finish = command.indexOf("</" + String(Config.ID) + ">");
@@ -134,9 +130,9 @@ void parse_command(String& command, float ary[]) {
   ary[1] = v;
 }
 
-////////// drive helper methods //////////
+////////// Drive helper methods //////////
 
-void drive(float ang, float velocity) {
+void Drive(float ang, float velocity) {
   turn(ang);
   burst(velocity);
 }

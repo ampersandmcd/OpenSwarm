@@ -13,6 +13,7 @@ struct Configuration
 
   // preferences
   bool Debug = true;
+  int DelayInterval = 50;
 
   // pin configuration
   int MotorPWMA = 5;
