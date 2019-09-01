@@ -2,65 +2,71 @@
 
 class Driver
 {
-  public:
-    MMEmotor& MotorA;
-    MMEmotor& MotorB;
+private:
+    MMEmotor &MotorA;
+    MMEmotor &MotorB;
 
-    Driver(MMEmotor& a, MMEmotor& b) : MotorA(a), MotorB(b) {};
+public:
+    Driver(MMEmotor &a, MMEmotor &b) : MotorA(a), MotorB(b){};
 
     void FullStop()
     {
-      MotorA.brake();
-      MotorB.brake();
+        MotorA.brake();
+        MotorB.brake();
     }
 
-    void Turn(float deg) 
+    void Turn(float &deg)
     {
-      float constant = 7;
-      if (deg > 0) {
-        // left Turn (CCW = +)
-        MotorA.backward(50);
-        MotorB.forward(50);
-        delay(abs(int(deg * constant)));
+        float constant = 7;
+        if (deg > 0)
+        {
+            // left Turn (CCW = +)
+            MotorA.backward(50);
+            MotorB.forward(50);
+            delay(abs(int(deg * constant)));
+            FullStop();
+        }
+        else
+        {
+            // right Turn (CW = -)
+            MotorA.forward(50);
+            MotorB.backward(50);
+            delay(abs(int(deg * constant)));
+            FullStop();
+        }
+    }
+
+    void Startup(int &speed)
+    {
+        for (int i = 0; i < speed; i++)
+        {
+            MotorA.backward(i);
+            MotorB.backward(i);
+            delay(5);
+        }
+    }
+
+    void Slowdown(int &speed)
+    {
+        for (int i = speed; i >= 0; i--)
+        {
+            MotorA.backward(i);
+            MotorB.backward(i);
+            delay(5);
+        }
         FullStop();
-      } else {
-        // right Turn (CW = -)
-        MotorA.forward(50);
-        MotorB.backward(50);
-        delay(abs(int(deg * constant)));
-        FullStop();
-      }
     }
 
-    void Startup(int sped)
+    void Burst(float &velocity)
     {
-      for(int i = 0; i < sped; i++){
-        MotorA.backward(i);
-        MotorB.backward(i);
-        delay(5);
-      }
+        int pwr = int(velocity);
+        Startup(pwr);
+        Slowdown(pwr);
     }
 
-    void Slowdown(int sped)
+    void Drive(float &ang, float &velocity)
     {
-      for(int i = sped; i >= 0; i--){
-        MotorA.backward(i);
-        MotorB.backward(i);
-        delay(5);
-      }
-      FullStop();
-    }
-
-    void Burst(float velocity) 
-    {
-      int pwr = int(velocity);
-      Startup(pwr);
-      Slowdown(pwr);
-    }
-
-    void Drive(float ang, float velocity) 
-    {
-      Turn(ang);
-      Burst(velocity);
+        Turn(ang);
+        Burst(velocity);
     }
 };
