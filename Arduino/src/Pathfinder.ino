@@ -12,13 +12,16 @@
 
 // include user-defined code
 #include "include/Configuration.h"
+#include "include/Utils.h"
+#include "include/Driver.h"
 
 // create configuration object
-Configuration Config = *(new Configuration());
+Configuration Config = Configuration();
 
 // initialize global objects
 MMEmotor MotorB  = MMEmotor(Config.MotorBIN1, Config.MotorBIN2, Config.MotorPWMB, Config.MotorSTBY);
 MMEmotor MotorA  = MMEmotor(Config.MotorAIN1, Config.MotorAIN2, Config.MotorPWMA, Config.MotorSTBY);
+Driver Controller = Driver(MotorA, MotorB);
 
 // enable communication with ESP
 SoftwareSerial ESP(Config.SoftwareSerialRX, Config.SoftwareSerialTX);
@@ -83,6 +86,7 @@ void loop() {
       // parse command to get angle and burst velocity for this ID
       float command[2];
       ParseCommand(message, command);
+
       float angle = command[0];
       float velocity = command[1];
 
@@ -91,7 +95,7 @@ void loop() {
       Serial.println("\t\tVelocity: " + String(velocity));
 
       // execute command
-      Drive(angle, velocity);
+      Controller.Drive(angle, velocity);
     }
   }
   delay(Config.DelayInterval);
@@ -132,82 +136,11 @@ void ParseCommand(String& command, float ary[]) {
 
 ////////// Drive helper methods //////////
 
-void Drive(float ang, float velocity) {
-  turn(ang);
-  burst(velocity);
-}
 
-void turn(float deg) {
-  float constant = 7;
-  if (deg > 0) {
-    // left turn (CCW = +)
-    MotorA.backward(50);
-    MotorB.forward(50);
-    delay(abs(int(deg * constant)));
-    fullstop();
-  } else {
-    // right turn (CW = -)
-    MotorA.forward(50);
-    MotorB.backward(50);
-    delay(abs(int(deg * constant)));
-    fullstop();
-  }
-}
-
-void burst(float velocity) {
-  int pwr = int(velocity);
-  startup(pwr);
-  slowdown(pwr);
-}
-
-void startup(int sped){
-  for(int i = 0; i < sped; i++){
-    MotorA.backward(i);
-    MotorB.backward(i);
-    delay(5);
-  }
-}
-
-void slowdown(int sped){
-  for(int i = sped; i >= 0; i--){
-    MotorA.backward(i);
-    MotorB.backward(i);
-    delay(5);
-  }
-  fullstop();
-}
-
-void fullstop(){
-  MotorA.brake();
-  MotorB.brake();
-}
 
 ////////// networking helper methods //////////
 
-void PrintWifiStatus()
-{
-  Serial.println("WiFi Status:");
 
-  // Print SSID info
-  String SSID = WiFi.SSID();
-  Serial.println("\tSSID: " + SSID);
-
-  // Print IP info
-  String IP = IPToString(WiFi.localIP());
-  Serial.println("\tIP Address: " + IP);
-
-  // Print signal strength
-  String RSSI = String(WiFi.RSSI());
-  Serial.println("\tSignal strength (RSSI): " + RSSI + " dBm");
-}
-
-String IPToString(IPAddress IP)
-{
-  return String(IP[0]) + "."
-  + String(IP[1]) + "."
-  + String(IP[2]) + "."
-  + String(IP[3]);
-}
 
 ///////////// Debug helper ///////////////
 

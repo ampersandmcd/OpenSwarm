@@ -23,6 +23,8 @@
                 "C:/Program Files (x86)/Arduino/hardware/arduino/avr/cores/arduino/Arduino.h",
                 "C:/Program Files (x86)/Arduino/hardware/tools/avr/avr/include/avr/**",
                 "C:/Users/mcdonald/Documents/OpenSwarm/Arduino/**",
+                "C:/Users/mcdonald/Documents/OpenSwarm/Arduino/Libraries/WiFiEsp/**",
+                "C:/Users/mcdonald/Documents/OpenSwarm/Arduino/Libraries/MMEmotor/**",
                 "C:/Users/mcdonald/Documents/OpenSwarm/Arduino/src",
                 "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\cores\\arduino\\Arduino.h"
             ],
