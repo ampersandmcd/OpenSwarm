@@ -1,5 +1,17 @@
+/*
+ * Andrew McDonald
+ * Michigan State University D-CYPHER Lab
+ * Utilities.h
+ * 9.1.19
+ * 
+ * Provides helper functions to convert data and debug memory contents at runtime.
+ */
+
 #include "Configuration.h"
 #include "WiFiEsp.h"
+
+#ifndef util
+#define util
 
 class Utilities
 {
@@ -9,11 +21,17 @@ private:
 public:
     Utilities(Configuration &config) : Config(config){};
 
-    String IPToString(IPAddress &IP)
+    // Purpose:     Convert IPAddress format to string for debugging purposes
+    // Params:      (IPAddress IP) the IP address to be converted to string
+    // Returns:     String of IP address
+    String IPToString(IPAddress IP)
     {
         return String(IP[0]) + "." + String(IP[1]) + "." + String(IP[2]) + "." + String(IP[3]);
     }
 
+    // Purpose:     Debug WiFi connection status
+    // Params:      none
+    // Returns:     void; prints directly to Serial in place of return string to conserve memory
     void DebugWifiStatus()
     {
         if (Config.Debug)
@@ -34,7 +52,10 @@ public:
         }
     }
 
-    void Debug(String &message)
+    // Purpose:     Prints debug command if Config.Debug argument is set to True
+    // Params:      (String message) the message to be debugged
+    // Returns:     void; prints directly to Serial
+    void Debug(String message)
     {
         if (Config.Debug)
         {
@@ -42,3 +63,5 @@ public:
         }
     }
 };
+
+#endif

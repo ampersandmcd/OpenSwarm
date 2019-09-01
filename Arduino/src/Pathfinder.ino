@@ -1,11 +1,19 @@
 /*
  * Andrew McDonald
- * MSU D-CYPHER Lab
+ * Michigan State University D-CYPHER Lab
  * Pathfinder.ino
+ * 9.1.19
+ * 
+ * Parses and executes navigation commands of the form '<ROBOT_ID>angle,velocity</ROBOT_ID>' sent via UDP broadcast from a Matlab server
+ * in order to guide the convergence of a swarm of client robots on a set of target positions.
+ * 
+ * These navigation commands are generated on the server-side by analyzing an overhead image of each client robot's current position and comparing it against
+ * a matrix of target positions; then, a string of commands is generated indicating to each robot to turn a certain angle and burst a certain speed to approach its target.
+ * 
+ * These commands are broadcast iteratively over UDP, ultimately leading to the convergence of a swarm on a set of targets specified in a target matrix.
  */
 
 // include external libraries
-#include "WiFiEsp.h"
 #include "WiFiEspUdp.h"
 #include "SoftwareSerial.h"
 #include "MMEmotor.h"
@@ -14,30 +22,32 @@
 #include "include/Configuration.h"
 #include "include/Utilities.h"
 #include "include/Driver.h"
+#include "include/Parser.h"
 
 // create configuration object
-Configuration Config = Configuration();
+Configuration CONFIG = Configuration();
 
 // initialize global objects
-MMEmotor MotorB = MMEmotor(Config.MotorBIN1, Config.MotorBIN2, Config.MotorPWMB, Config.MotorSTBY);
-MMEmotor MotorA = MMEmotor(Config.MotorAIN1, Config.MotorAIN2, Config.MotorPWMA, Config.MotorSTBY);
-Driver Controller = Driver(MotorA, MotorB);
-Utilities Utils = Utilities(Config);
+MMEmotor MOTORB = MMEmotor(CONFIG.MotorBIN1, CONFIG.MotorBIN2, CONFIG.MotorPWMB, CONFIG.MotorSTBY);
+MMEmotor MOTORA = MMEmotor(CONFIG.MotorAIN1, CONFIG.MotorAIN2, CONFIG.MotorPWMA, CONFIG.MotorSTBY);
+Driver DRIVER = Driver(MOTORA, MOTORB, CONFIG);
+Utilities UTILS = Utilities(CONFIG);
+Parser PARSER = Parser(CONFIG);
 
 // enable communication with ESP
-SoftwareSerial ESP(Config.SoftwareSerialRX, Config.SoftwareSerialTX);
+SoftwareSerial ESP(CONFIG.SoftwareSerialRX, CONFIG.SoftwareSerialTX);
 
 // initialize buffer to store incoming message
 char Buffer[255];
 
 // enable UDP communication over WiFi network
-WiFiEspUDP Udp;
+WiFiEspUDP UDP;
 
 void setup()
 {
     // initialize communication between serial, ESP and wifi
-    Serial.begin(Config.SerialBaud);
-    ESP.begin(Config.ESPBaud);
+    Serial.begin(CONFIG.SerialBaud);
+    ESP.begin(CONFIG.ESPBaud);
     WiFi.init(&ESP);
 
     // attempt to connect to WiFi network
@@ -45,28 +55,28 @@ void setup()
 
     while (status != WL_CONNECTED)
     {
-        Utils.Debug("Attempting to connect to WPA SSID: " + String(Config.SSID));
-        status = WiFi.begin(Config.SSID, Config.Password);
+        UTILS.Debug("Attempting to connect to WPA SSID: " + String(CONFIG.SSID));
+        status = WiFi.begin(CONFIG.SSID, CONFIG.Password);
     }
 
-    Utils.Debug(String("Connected to WiFi."));
-    Utils.DebugWifiStatus();
+    UTILS.Debug(String("Connected to WiFi."));
+    UTILS.DebugWifiStatus();
 
     // begin listening on RXPort for UDP broadcasts
-    Utils.Debug(String("Starting connection to server..."));
-    Udp.begin(Config.RXPort);
-    Utils.Debug("Listening on port " + String(Config.RXPort));
+    UTILS.Debug(String("Starting connection to server..."));
+    UDP.begin(CONFIG.RXPort);
+    UTILS.Debug("Listening on port " + String(CONFIG.RXPort));
 }
 
 void loop()
 {
     // if there's a UDP packet available, read it
-    int packetSize = Udp.parsePacket();
+    int packetSize = UDP.parsePacket();
 
     if (packetSize > 0)
     {
         // get length of incoming message
-        int length = Udp.read(Buffer, 255);
+        int length = UDP.read(Buffer, 255);
 
         if (length > 0)
         {
@@ -76,63 +86,26 @@ void loop()
 
         // store message in string for parsing
         String message = String(Buffer);
-        Utils.Debug("\tRaw message received: " + message);
+        UTILS.Debug("\tRaw message received: " + message);
 
         // parse message and see if it contains relevant command
-        if (HasCommand(message))
+        if (PARSER.HasCommand(message))
         {
             // parse command to get angle and burst velocity for this ID
             float command[2];
-            ParseCommand(message, command);
+            PARSER.ParseCommand(message, command);
 
             float angle = command[0];
             float velocity = command[1];
 
-            Utils.Debug("\tRobot ID: " + String(Config.ID));
-            Utils.Debug("\t\tAngle: " + String(angle));
+            UTILS.Debug("\tRobot ID: " + String(CONFIG.ID));
+            UTILS.Debug("\t\tAngle: " + String(angle));
             Serial.println("\t\tVelocity: " + String(velocity));
 
             // execute command
-            Controller.Drive(angle, velocity);
+            DRIVER.Drive(angle, velocity);
         }
     }
-    delay(Config.DelayInterval);
-}
 
-////////// parsing helper methods //////////
-
-// check to see if this ID has received a valid command of the form
-// <start> . . . <ID>angle,velocity</ID> . . . <end>
-bool HasCommand(String &command)
-{
-    if (command.indexOf("<" + String(Config.ID) + ">") != -1 && command.indexOf("<start>") != -1 && command.indexOf("<end>") != -1)
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
-// parses command for turn angle and velocity to be executed by robot from command of the form
-// <start> . . . <ID>angle,velocity</ID> . . . <end>
-void ParseCommand(String &command, float ary[])
-{
-    String my_command = "";
-    int start = command.indexOf("<" + String(Config.ID) + ">") + 2 + String(Config.ID).length();
-    int finish = command.indexOf("</" + String(Config.ID) + ">");
-    my_command = command.substring(start, finish);
-
-    int ang_start = 0;
-    int ang_finish = my_command.indexOf(",", ang_start);
-    String my_ang = my_command.substring(ang_start, ang_finish);
-    float ang = my_ang.toFloat();
-
-    int v_start = ang_finish + 1;
-    String my_v = my_command.substring(v_start);
-    float v = my_v.toFloat();
-
-    ary[0] = ang;
-    ary[1] = v;
+    delay(CONFIG.DelayInterval);
 }

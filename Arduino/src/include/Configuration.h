@@ -1,3 +1,12 @@
+/*
+ * Andrew McDonald
+ * Michigan State University D-CYPHER Lab
+ * Configuration.h
+ * 9.1.19
+ * 
+ * Provides configuration settings for the client robot.
+ */
+
 #ifndef cfg
 #define cfg
 
@@ -18,6 +27,7 @@ public:
     // preferences
     bool Debug = true;
     int DelayInterval = 50;
+    int DelayAcceleration = 3;
 
     // pin configuration
     int MotorPWMA = 5;
