@@ -1,6 +1,8 @@
 {
     "files.associations": {
-        "istream": "cpp"
+        "istream": "cpp",
+        "*.rh": "cpp",
+        "memory": "cpp"
     },
     "C_Cpp.intelliSenseCacheSize": 0
 }
