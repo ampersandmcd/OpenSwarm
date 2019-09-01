@@ -14,14 +14,16 @@
                 "C:/Users/mcdonald/Documents/OpenSwarm/Arduino/Libraries/**",
                 "C:/Program Files (x86)/Arduino/hardware/arduino/avr/**",
                 "C:/Program Files (x86)/Arduino/tools/**",
-                "C:/Users/mcdonald/Documents/OpenSwarm/Arduino/Libraries/ArduinoJson-6.x/src",
+                "C:/Users/mcdonald/Documents/OpenSwarm/Arduino/**",
+                "C:/Users/mcdonald/Documents/OpenSwarm/Arduino/src",
                 "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\**",
                 "C:\\Program Files (x86)\\Arduino\\tools\\**"
             ],
             "forcedInclude": [
                 "C:/Program Files (x86)/Arduino/hardware/arduino/avr/cores/arduino/Arduino.h",
                 "C:/Program Files (x86)/Arduino/hardware/tools/avr/avr/include/avr/**",
-                "C:/Users/mcdonald/Documents/OpenSwarm/Arduino/Libraries/ArduinoJson-6.x/src/**",
+                "C:/Users/mcdonald/Documents/OpenSwarm/Arduino/**",
+                "C:/Users/mcdonald/Documents/OpenSwarm/Arduino/src",
                 "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\cores\\arduino\\Arduino.h"
             ],
             "intelliSenseMode": "msvc-x64",
