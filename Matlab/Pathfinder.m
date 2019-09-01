@@ -1,5 +1,5 @@
 % General Parameters to set
-num_robots = 2;
+num_robots = 3;
 % Set superimposed field coordinate limits to 800x800
 x_axis_sz = 1024;
 y_axis_sz = 768;
@@ -11,7 +11,10 @@ triggerconfig(cam1, 'manual');
 start(cam1);
 
 % Create and open udp listeners for Arduino light level transmission
-fclose(instrfindall);
+try
+    fclose(instrfindall);
+catch
+end
 
 % Create and open udp server to send commands to Arduinos
 u = udp('10.10.10.255', 8080);
@@ -33,12 +36,9 @@ end
 counter = 1;
 
 % configure waypoint matrix manually, or call MakeWaypoints
-waypoint_matrix = [50, 50, 90;
-                   x_axis_sz-50, y_axis_sz-50, 90;
-                  ];
-              
-waypoint_matrix(:, :, 2) = [400, 400, 90;
-                            500, 400, 90;
+waypoint_matrix = [100, 700, 90;
+                            450, 700, 90;
+                            700, 700, 90
                            ];
 %                        
 % waypoint_matrix(:, :, 3) = waypoint_matrix(:, :, 1);

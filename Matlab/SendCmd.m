@@ -75,7 +75,7 @@ function f = SendCmd(goto_matrix, positions, u)
     cmd = '<start>';
     for i = 1:size(cmd_matrix, 1)
         % send commands with format <ID>angle,speed</ID>
-        cmd = strcat(cmd, sprintf('<%d>%d,%d</%d>', i, cmd_matrix(i, 1), cmd_matrix(i, 2), i));
+        cmd = strcat(cmd, sprintf('<%d>%d,%d</%d>', i, round(cmd_matrix(i, 1)), round(cmd_matrix(i, 2)), i));
     end
     cmd = strcat(cmd, '<end>');
     
