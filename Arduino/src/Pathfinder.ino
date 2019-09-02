@@ -30,15 +30,18 @@ Configuration CONFIG = Configuration();
 // initialize global objects
 MMEmotor MOTORB = MMEmotor(CONFIG.MotorBIN1, CONFIG.MotorBIN2, CONFIG.MotorPWMB, CONFIG.MotorSTBY);
 MMEmotor MOTORA = MMEmotor(CONFIG.MotorAIN1, CONFIG.MotorAIN2, CONFIG.MotorPWMA, CONFIG.MotorSTBY);
-Driver DRIVER = Driver(MOTORA, MOTORB, CONFIG);
 Utilities UTILS = Utilities(CONFIG);
+Driver DRIVER = Driver(MOTORA, MOTORB, CONFIG, UTILS);
 Parser PARSER = Parser(CONFIG);
 
 // enable communication with ESP
 SoftwareSerial ESP(CONFIG.SoftwareSerialRX, CONFIG.SoftwareSerialTX);
 
 // initialize buffer to store incoming message
-char Buffer[255];
+char RxBuffer[255];
+
+// initialize buffer to store outgoing message
+char TxBuffer[4];
 
 // enable UDP communication over WiFi network
 WiFiEspUDP UDP;
@@ -76,33 +79,46 @@ void loop()
     if (packetSize > 0)
     {
         // get length of incoming message
-        int length = UDP.read(Buffer, 255);
+        int length = UDP.read(RxBuffer, 255);
 
         if (length > 0)
         {
             // indicate end of incoming message in buffer
-            Buffer[length] = 0;
+            RxBuffer[length] = 0;
         }
 
         // store message in string for parsing
-        String message = String(Buffer);
+        String message = String(RxBuffer);
         UTILS.Debug("\tRaw message received: " + message);
 
         // parse message and see if it contains relevant command
         if (PARSER.HasCommand(message))
         {
+            // send back light level data
+            if (CONFIG.LDRMode)
+            {
+                // read light level
+                UTILS.GetLightLevel(TxBuffer);
+
+                // write light level over UDP
+                UTILS.Debug("\t\tSending to: " + UTILS.IPToString(CONFIG.TXIP) + ":" + String(CONFIG.TXPort));
+                UDP.beginPacket(CONFIG.TXIP, CONFIG.TXPort);
+                UDP.write(TxBuffer);
+                UDP.endPacket();
+            }
+
             // parse command to get angle and burst velocity for this ID
-            float command[2];
+            int command[2];
             PARSER.ParseCommand(message, command);
 
-            float angle = command[0];
-            float velocity = command[1];
+            int angle = command[0];
+            int velocity = command[1];
 
-            UTILS.Debug("\tRobot ID: " + String(CONFIG.ID));
+            UTILS.Debug("\tCommand for Robot ID: " + String(CONFIG.ID));
             UTILS.Debug("\t\tAngle: " + String(angle));
-            Serial.println("\t\tVelocity: " + String(velocity));
+            UTILS.Debug("\t\tVelocity: " + String(velocity));
 
-            // execute command
+            // execute drive command
             DRIVER.Drive(angle, velocity);
         }
     }

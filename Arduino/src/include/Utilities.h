@@ -21,6 +21,21 @@ private:
 public:
     Utilities(Configuration &config) : Config(config){};
 
+    // Purpose:     Read light level from light-dependent resistor and copy into TXBuffer
+    // Params:      (char TXBuffer[]) the char array to be sent to the server over UDP
+    // Returns:     void
+    void GetLightLevel(char TXBuffer[])
+    {
+        Debug("\tGetting light level:");
+
+        // get light level from LDR
+        int lightLevel = analogRead(Config.LDRPin);
+        Debug("\t\tAnalogRead: " + String(lightLevel));
+
+        // write base 10 light level to TXBuffer as char array to send
+        itoa(lightLevel, TXBuffer, 10);
+    }
+
     // Purpose:     Convert IPAddress format to string for debugging purposes
     // Params:      (IPAddress IP) the IP address to be converted to string
     // Returns:     String of IP address
