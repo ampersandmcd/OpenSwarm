@@ -35,9 +35,9 @@ public:
 
     // Purpose:     Parses command string to obtain command relevant to this robot
     // Params:      (String& command)   Reference string to command in question
-    //              (float ary[])       float array in which to store [angle, velocity]
+    //              (int ary[])       int array in which to store [angle, velocity]
     // Returns:     void; modifies ary[] param to contain [angle, velocity] for this robot
-    void ParseCommand(String &command, float ary[])
+    void ParseCommand(String &command, int ary[])
     {
         String myCommand = "";
         int start = command.indexOf("<" + String(Config.ID) + ">") + 2 + String(Config.ID).length();
@@ -47,11 +47,11 @@ public:
         int angleStart = 0;
         int angleFinish = myCommand.indexOf(",", angleStart);
         String angleString = myCommand.substring(angleStart, angleFinish);
-        float angle = angleString.toFloat();
+        int angle = angleString.toInt();
 
         int velocityStart = angleFinish + 1;
         String velocityString = myCommand.substring(velocityStart);
-        float velocity = velocityString.toFloat();
+        int velocity = velocityString.toInt();
 
         ary[0] = angle;
         ary[1] = velocity;

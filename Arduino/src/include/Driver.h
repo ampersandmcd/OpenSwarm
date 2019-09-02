@@ -33,12 +33,12 @@ public:
     }
 
     // Purpose:     Turns robot 'deg' degrees, where CCW is a positive angle and CW is a negative angle
-    // Params:      (float& deg) reference to float variable specifying rotation in degrees
+    // Params:      (int& deg) reference to int variable specifying rotation in degrees
     // Returns:     void
-    void Turn(float &deg)
+    void Turn(int &deg)
     {
         // experimentally determined constant to correlate delay with rotation in degrees
-        float constant = 7;
+        int constant = 7;
 
         if (deg > 0)
         {
@@ -86,9 +86,9 @@ public:
     }
 
     // Purpose:     Bursts robot forward; called repeatedly along with Turn to converge on target point
-    // Params:      (int& velocity) Speed as floating-point percentage between 0-100 of full power
+    // Params:      (int& velocity) Speed as int percentage between 0-100 of full power
     // Returns:     void
-    void Burst(float &velocity)
+    void Burst(int &velocity)
     {
         int speed = int(velocity);
         Startup(speed);
@@ -96,10 +96,10 @@ public:
     }
 
     // Purpose:     Turns and Bursts robot towards target point
-    // Params:      (float &angle)      Angle in degrees as floating-point; CCW is positive, CW is negative
-    //              (float &velocity)   Speed as floating-point percentage between 0-100 of full power
+    // Params:      (int &angle)      Angle in degrees as int; CCW is positive, CW is negative
+    //              (int &velocity)   Speed as int percentage between 0-100 of full power
     // Returns:     void
-    void Drive(float &angle, float &velocity)
+    void Drive(int &angle, int &velocity)
     {
         Turn(angle);
         Burst(velocity);
