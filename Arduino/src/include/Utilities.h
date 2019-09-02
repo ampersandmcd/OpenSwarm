@@ -21,6 +21,35 @@ private:
 public:
     Utilities(Configuration &config) : Config(config){};
 
+    // Purpose:     Flash all LEDs on robot
+    // Params:      (int time) how long to flash LEDs in ms
+    // Returns:     void
+    void FlashAll(int time)
+    {
+        digitalWrite(Config.RedPin, HIGH);
+        digitalWrite(Config.GreenPin, HIGH);
+        digitalWrite(Config.BluePin, HIGH);
+
+        delay(time);
+
+        digitalWrite(Config.RedPin, LOW);
+        digitalWrite(Config.GreenPin, LOW);
+        digitalWrite(Config.BluePin, LOW);
+    }
+
+    // Purpose:     Flash one LED on robot
+    // Params:      (int time) how long to flash LEDs in ms
+    //              (int pin) which pin to flash
+    // Returns:     void
+    void Flash(int time, int pin)
+    {
+        digitalWrite(pin, HIGH);
+
+        delay(time);
+
+        digitalWrite(pin, LOW);
+    }
+
     // Purpose:     Read light level from light-dependent resistor and copy into TXBuffer
     // Params:      (char TXBuffer[]) the char array to be sent to the server over UDP
     // Returns:     void

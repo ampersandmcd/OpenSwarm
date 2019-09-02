@@ -48,6 +48,9 @@ WiFiEspUDP UDP;
 
 void setup()
 {
+    // Flash LEDs to indicate power
+    UTILS.FlashAll(50);
+
     // initialize communication between serial, ESP and wifi
     Serial.begin(CONFIG.SerialBaud);
     ESP.begin(CONFIG.ESPBaud);
@@ -62,8 +65,10 @@ void setup()
         status = WiFi.begin(CONFIG.SSID, CONFIG.Password);
     }
 
+    // connection successful
     UTILS.Debug(String("Connected to WiFi."));
     UTILS.DebugWifiStatus();
+    digitalWrite(CONFIG.GreenPin, HIGH);
 
     // begin listening on RXPort for UDP broadcasts
     UTILS.Debug(String("Starting connection to server..."));
@@ -78,6 +83,9 @@ void loop()
 
     if (packetSize > 0)
     {
+        // flash blue to indicate reception of message
+        UTILS.Flash(5, CONFIG.BluePin);
+
         // get length of incoming message
         int length = UDP.read(RxBuffer, 255);
 
@@ -100,11 +108,13 @@ void loop()
                 // read light level
                 UTILS.GetLightLevel(TxBuffer);
 
-                // write light level over UDP
+                // write light level over UDP and indicate message send with red led
                 UTILS.Debug("\t\tSending to: " + UTILS.IPToString(CONFIG.TXIP) + ":" + String(CONFIG.TXPort));
+                digitalWrite(CONFIG.RedPin, HIGH);
                 UDP.beginPacket(CONFIG.TXIP, CONFIG.TXPort);
                 UDP.write(TxBuffer);
                 UDP.endPacket();
+                digitalWrite(CONFIG.RedPin, LOW);
             }
 
             // parse command to get angle and burst velocity for this ID
@@ -118,8 +128,10 @@ void loop()
             UTILS.Debug("\t\tAngle: " + String(angle));
             UTILS.Debug("\t\tVelocity: " + String(velocity));
 
-            // execute drive command
+            // execute drive command and indicate execution with blue led
+            digitalWrite(CONFIG.BluePin, HIGH);
             DRIVER.Drive(angle, velocity);
+            digitalWrite(CONFIG.BluePin, LOW);
         }
     }
 

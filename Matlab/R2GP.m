@@ -10,7 +10,7 @@ yTrain = points(:, 3); % z column of input
 nTrain = size(xTrain, 1);
 
 % GPML
-run('./GPML/startup.m');
+run('./gpml/gpstartup.m');
 %covfunc = @covSEiso;% Uses squared exponential Kernel
 covfunc = {'covProd',{'covSEiso','covSEiso'}};
 meanfunc = @meanConst;
