@@ -1,5 +1,5 @@
 % General Parameters to set
-num_robots = 2;
+num_robots = 3;
 % Set superimposed field coordinate limits to 800x800
 x_axis_sz = 1024;
 y_axis_sz = 768;
@@ -10,7 +10,7 @@ delay = 2;
 
 % Start and configure cameras
 imaqreset;
-cam1 = videoinput('winvideo', 2);
+cam1 = videoinput('winvideo', 1);
 triggerconfig(cam1, 'manual');
 start(cam1);
 
@@ -20,7 +20,10 @@ for i = 1:5
 end
 
 % Create and open udp server to send commands to Arduinos
-fclose(instrfindall);
+try
+    fclose(instrfindall);
+catch
+end
 u = udp('10.10.10.255', 8080);
 fopen(u);
 
@@ -28,7 +31,7 @@ fopen(u);
 udpr = {};
 udpr{1} = udp('10.10.10.255', 'RemotePort', 8080, 'LocalPort', 8001, 'Timeout', 0.01);
 udpr{2} = udp('10.10.10.255', 'RemotePort', 8080, 'LocalPort', 8002, 'Timeout', 0.01);
-% udpr{3} = udp('10.10.10.255', 'RemotePort', 8080, 'LocalPort', 8003, 'Timeout', 0.01);
+udpr{3} = udp('10.10.10.255', 'RemotePort', 8080, 'LocalPort', 8003, 'Timeout', 0.01);
 % udpr{4} = udp('10.10.10.255', 'RemotePort', 8080, 'LocalPort', 8004, 'Timeout', 0.01);
 % udpr{5} = udp('10.10.10.255', 'RemotePort', 8080, 'LocalPort', 8005, 'Timeout', 0.01);
 for i = 1:size(udpr,2)
@@ -50,7 +53,7 @@ counter = 1;
 %                            ];
 %                        
 % waypoint_matrix(:, :, 3) = waypoint_matrix(:, :, 1);
-num_waypoints = 7;
+num_waypoints = 1;
 go_home = false;
 pose = false;
 waypoint_matrix = MakeWaypoints(num_waypoints, num_robots, x_axis_sz, y_axis_sz, go_home, pose);
@@ -81,6 +84,12 @@ for i = 1:size(waypoint_matrix, 3)
         % get current position of each robot
         positions = Locate(cam1, x_axis_sz, y_axis_sz, counter, positions, num_robots); % get positions
         
+        % tell each robot where to go on next "burst"
+        SendCmd(goto_matrix, positions, u);
+        
+        % don't overload UDP commands to robots
+        pause(delay);
+        
         % get current light levels of each robot and save into lightmap
         templight = zeros(num_robots, 3);
         templight(:, 1:2) = positions(:, 1:2); % get x,y coords of each robot
@@ -98,16 +107,11 @@ for i = 1:size(waypoint_matrix, 3)
         % visualize lightmap
         PlotLightmap(lightmap, x_axis_sz, y_axis_sz, ax_graph)
         
-        % tell each robot where to go on next "burst"
-        SendCmd(goto_matrix, positions, u);
-        
         % bookkeeping
         counter = counter + 1;
         disp(counter);
         toc;
         tic;
-        % don't overload UDP commands to robots
-        pause(delay);
     end
 end
 

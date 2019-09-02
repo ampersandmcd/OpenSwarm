@@ -14,7 +14,7 @@ class Configuration
 {
 public:
     // identifier configuration
-    int ID = 1; // unique identifier for this robot
+    int ID = 4; // unique identifier for this robot
 
     // network configuration
     char SSID[11] = "belkin.785";                // network SSID
