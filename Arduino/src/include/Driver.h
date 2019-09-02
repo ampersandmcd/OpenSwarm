@@ -9,6 +9,7 @@
 
 #include "MMEmotor.h"
 #include "Configuration.h"
+#include "Utilities.h"
 
 #ifndef driver
 #define driver
@@ -18,10 +19,11 @@ class Driver
 private:
     MMEmotor &MotorA;
     MMEmotor &MotorB;
-    Configuration Config;
+    Configuration &Config;
+    Utilities &Utils;
 
 public:
-    Driver(MMEmotor &a, MMEmotor &b, Configuration &c) : MotorA(a), MotorB(b), Config(c){};
+    Driver(MMEmotor &a, MMEmotor &b, Configuration &c, Utilities &u) : MotorA(a), MotorB(b), Config(c), Utils(u){};
 
     // Purpose:     Stops robot's motion
     // Params:      none
@@ -101,8 +103,10 @@ public:
     // Returns:     void
     void Drive(int &angle, int &velocity)
     {
+        Utils.Debug("\tDriving...");
         Turn(angle);
         Burst(velocity);
+        Utils.Debug("\tDone.");
     }
 };
 

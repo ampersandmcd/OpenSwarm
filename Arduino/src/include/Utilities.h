@@ -26,11 +26,11 @@ public:
     // Returns:     void
     void GetLightLevel(char TXBuffer[])
     {
-        Debug("Getting light level:");
+        Debug("\tGetting light level:");
 
         // get light level from LDR
         int lightLevel = analogRead(Config.LDRPin);
-        Debug("\tAnalogRead: " + String(lightLevel));
+        Debug("\t\tAnalogRead: " + String(lightLevel));
 
         // write base 10 light level to TXBuffer as char array to send
         itoa(lightLevel, TXBuffer, 10);

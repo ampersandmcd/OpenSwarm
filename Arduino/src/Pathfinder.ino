@@ -30,8 +30,8 @@ Configuration CONFIG = Configuration();
 // initialize global objects
 MMEmotor MOTORB = MMEmotor(CONFIG.MotorBIN1, CONFIG.MotorBIN2, CONFIG.MotorPWMB, CONFIG.MotorSTBY);
 MMEmotor MOTORA = MMEmotor(CONFIG.MotorAIN1, CONFIG.MotorAIN2, CONFIG.MotorPWMA, CONFIG.MotorSTBY);
-Driver DRIVER = Driver(MOTORA, MOTORB, CONFIG);
 Utilities UTILS = Utilities(CONFIG);
+Driver DRIVER = Driver(MOTORA, MOTORB, CONFIG, UTILS);
 Parser PARSER = Parser(CONFIG);
 
 // enable communication with ESP
@@ -94,17 +94,6 @@ void loop()
         // parse message and see if it contains relevant command
         if (PARSER.HasCommand(message))
         {
-            // parse command to get angle and burst velocity for this ID
-            int command[2];
-            PARSER.ParseCommand(message, command);
-
-            int angle = command[0];
-            int velocity = command[1];
-
-            UTILS.Debug("\tRobot ID: " + String(CONFIG.ID));
-            UTILS.Debug("\t\tAngle: " + String(angle));
-            UTILS.Debug("\t\tVelocity: " + String(velocity));
-
             // send back light level data
             if (CONFIG.LDRMode)
             {
@@ -112,11 +101,22 @@ void loop()
                 UTILS.GetLightLevel(TxBuffer);
 
                 // write light level over UDP
-                UTILS.Debug("\tSending to: " + UTILS.IPToString(CONFIG.TXIP) + ":" + String(CONFIG.TXPort));
+                UTILS.Debug("\t\tSending to: " + UTILS.IPToString(CONFIG.TXIP) + ":" + String(CONFIG.TXPort));
                 UDP.beginPacket(CONFIG.TXIP, CONFIG.TXPort);
                 UDP.write(TxBuffer);
                 UDP.endPacket();
             }
+
+            // parse command to get angle and burst velocity for this ID
+            int command[2];
+            PARSER.ParseCommand(message, command);
+
+            int angle = command[0];
+            int velocity = command[1];
+
+            UTILS.Debug("\tCommand for Robot ID: " + String(CONFIG.ID));
+            UTILS.Debug("\t\tAngle: " + String(angle));
+            UTILS.Debug("\t\tVelocity: " + String(velocity));
 
             // execute drive command
             DRIVER.Drive(angle, velocity);
