@@ -14,7 +14,7 @@ class Configuration
 {
 public:
     // identifier configuration
-    int ID = 4; // unique identifier for this robot
+    int ID = 3; // unique identifier for this robot
 
     // network configuration
     char SSID[11] = "belkin.785";                // network SSID
@@ -33,6 +33,9 @@ public:
 
     // pin configuration
     int LDRPin = 5;    // light-dependent resistor analog connection
+    int GreenPin = 4;  // green led pin to indicate WiFi connection
+    int BluePin = 13;  // blue led pin to indicate command reception and drive execution
+    int RedPin = 12;   // red led pin to indicate response transmission
     int MotorPWMA = 5; // motor connection
     int MotorAIN1 = 7;
     int MotorAIN2 = 6;

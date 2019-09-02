@@ -1,5 +1,5 @@
 % General Parameters to set
-num_robots = 3;
+num_robots = 4;
 % Set superimposed field coordinate limits to 800x800
 x_axis_sz = 1024;
 y_axis_sz = 768;
@@ -32,7 +32,7 @@ udpr = {};
 udpr{1} = udp('10.10.10.255', 'RemotePort', 8080, 'LocalPort', 8001, 'Timeout', 0.01);
 udpr{2} = udp('10.10.10.255', 'RemotePort', 8080, 'LocalPort', 8002, 'Timeout', 0.01);
 udpr{3} = udp('10.10.10.255', 'RemotePort', 8080, 'LocalPort', 8003, 'Timeout', 0.01);
-% udpr{4} = udp('10.10.10.255', 'RemotePort', 8080, 'LocalPort', 8004, 'Timeout', 0.01);
+udpr{4} = udp('10.10.10.255', 'RemotePort', 8080, 'LocalPort', 8004, 'Timeout', 0.01);
 % udpr{5} = udp('10.10.10.255', 'RemotePort', 8080, 'LocalPort', 8005, 'Timeout', 0.01);
 for i = 1:size(udpr,2)
     fopen(udpr{i});
@@ -53,10 +53,10 @@ counter = 1;
 %                            ];
 %                        
 % waypoint_matrix(:, :, 3) = waypoint_matrix(:, :, 1);
-num_waypoints = 1;
-go_home = false;
+num_waypoints = 4;
+go_home = true;
 pose = false;
-waypoint_matrix = MakeWaypoints(num_waypoints, num_robots, x_axis_sz, y_axis_sz, go_home, pose);
+% waypoint_matrix = MakeWaypoints(num_waypoints, num_robots, x_axis_sz, y_axis_sz, go_home, pose);
 
 % configure tolerances for convergence
 dist_tolerance = 40;
