@@ -3,15 +3,15 @@ classdef Burst
     %   to each robot
     
     properties
-        speed;
-        angle;
+        Speed;      % Speed (between 0-100) at which robot should "burst"
+        Angle;      % Angle which robot should turn before "burst"
     end
     
     methods
         function obj = Burst(inputSpeed, inputAngle)
             %BURST: Construct a Burst object
-            obj.speed = inputSpeed;
-            obj.angle = inputAngle;
+            obj.Speed = inputSpeed;
+            obj.Angle = inputAngle;
         end
     end
 end
