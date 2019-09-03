@@ -4,15 +4,15 @@ classdef Position
     properties
         x;          % x position of the robot
         y;          % y position of the robot
-        angle;      % heading angle robot is facing
+        heading;      % heading angle robot is facing
     end
     
     methods
-        function obj = Position(inputX, inputY, inputAngle)
-            %POSITION Construct a position object
+        function obj = Position(inputX, inputY, inputHeading)
+            %POSITION: Construct a position object
             obj.x = inputX;
             obj.y = inputY;
-            obj.angle = inputAngle;
+            obj.heading = inputHeading;
         end
     end
 end
