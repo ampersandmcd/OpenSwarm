@@ -3,19 +3,21 @@
 % initialize environment settings
 environment = Environment();
 
-% initialize webcam tracking
-vision = Vision(environment);
-
-% initialize communications
-messenger = Messenger(environment);
-
-% initialize plot helper
+% initialize plot helper object
 plotter = Plotter(environment);
 
-% test camera
-img = vision.GetSnapshot();
-plotter.PlotColorImage(img);
+% initialize webcam tracking
+vision = Vision(environment, plotter);
 
-% auto-set threshold
+% initialize communications
+messenger = Messenger(environment, plotter);
+
+
+
+% test camera
+vision = vision.GetSnapshot();
+vision = vision.GetBWSnapshot();
+
+
 
 disp(environment);

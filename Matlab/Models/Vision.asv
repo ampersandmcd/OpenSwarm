@@ -37,22 +37,20 @@ classdef Vision
         end
         
         function obj = GetSnapshot(obj)
-            %GetSnapshot: Takes and plots color image with environment camera
+            %GetSnapshot: Takes, plots, and returns color image with environment camera
             
             colorImg = getsnapshot(obj.Camera);
-            obj.Plotter = obj.Plotter.PlotColorImage(colorImg);
+            obj.Plotter = obj.Plotter.PlotColorImg(colorImg);
         end
         
         function bwImg = GetBWSnapshot(obj)
-            %GetBWSnapshot: Takes and plots image with environment camera
+            %GetBWSnapshot: Takes and returns image with environment camera
             %   converted to black and white given BWThreshold and
             %   AnchorSize
             
-            colorImg = getsnapshot(obj.Camera);
+            colorImg = obj.GetSnapshot();
             bwImg = imbinarize(rgb2gray(colorImg), obj.BWThreshold);
             bwImg = bwareaopen(bwImg, obj.AnchorSize);
-            
-            obj.Plotter = obj.Plotter.PlotBWImage(bwImg);
         end
         
         function threshold = GetBWThreshold(obj)
@@ -60,7 +58,6 @@ classdef Vision
             %   threshold to properly deduce locations of robot visual anchors
             
             threshold = 0.7;
-            %TODO: actually implement auto-set algorithm
         end
         
         function anchorSize = GetAnchorSize(obj)
@@ -68,7 +65,6 @@ classdef Vision
            %    locations of robot visual anchors 
            
            anchorSize = 10;
-           %TODO: actually implement auto-set algorithm
         end
     end
 end

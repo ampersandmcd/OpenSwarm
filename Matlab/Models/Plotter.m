@@ -32,6 +32,11 @@ classdef Plotter
            %PlotColorImage: display a color image on ColorImageAxes
            imshow(img, 'Parent', obj.ColorImageAxes);
         end
+        
+        function obj = PlotBWImage(obj, img)
+           %PlotBWImage: display a BW image on BWImageAxes
+           imshow(img, 'Parent', obj.BWImageAxes);
+        end
     end
 end
 

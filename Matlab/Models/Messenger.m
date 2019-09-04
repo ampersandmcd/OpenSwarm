@@ -3,15 +3,17 @@ classdef Messenger
     
     properties
         Environment;    % Environment object dependency
+        Plotter;        % Plotter object dependency
         UDPTransmitter; % udp object to broadcast commands
         UDPReceiver;    % struct of udp objects to receive commands
     end
     
     methods
-        function obj = Messenger(inputEnvironment)
+        function obj = Messenger(inputEnvironment, inputPlotter)
             %MESSENGER: Construct and configure a messenger object
             
             obj.Environment = inputEnvironment;
+            obj.Plotter = inputPlotter;
             
             if obj.Environment.UDPTransmission
                 obj = obj.StartUDPTransmitter();
