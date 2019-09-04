@@ -1,21 +1,23 @@
 %PATHFINDER: sends robots on a configurable path in testing field
 
-% clean up
-clear all;
-close all;
+% initialize environment settings
+environment = Environment();
 
-% initialize environment
-env = Environment();
-env = env.StartCamera();
-env = env.StartUDPTransmitter();
+% initialize webcam tracking
+vision = Vision(environment);
+vision = vision.StartCamera();
+
+% initialize communications
+messenger = Messenger(environment);
+messenger = messenger.StartUDPTransmitter();
 
 % initialize plot helper
-p = Plotter();
+plotter = Plotter();
 
 % test camera
-img = env.GetSnapshot();
-p.PlotColorImage(img);
+img = vision.GetSnapshot();
+plotter.PlotColorImage(img);
 
 % auto-set threshold
 
-disp(env);
+disp(environment);
