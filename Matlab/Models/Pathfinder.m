@@ -5,14 +5,12 @@ environment = Environment();
 
 % initialize webcam tracking
 vision = Vision(environment);
-vision = vision.StartCamera();
 
 % initialize communications
 messenger = Messenger(environment);
-messenger = messenger.StartUDPTransmitter();
 
 % initialize plot helper
-plotter = Plotter();
+plotter = Plotter(environment);
 
 % test camera
 img = vision.GetSnapshot();
