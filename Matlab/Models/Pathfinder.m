@@ -15,9 +15,4 @@ messenger = Messenger(environment, plotter);
 
 
 % test camera
-vision = vision.GetSnapshot();
-vision = vision.GetBWSnapshot();
-
-
-
-disp(environment);
+vision = vision.UpdatePositions();
