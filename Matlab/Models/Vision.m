@@ -1,5 +1,6 @@
 classdef Vision
-    %VISION: Object to encapsulate all image processing functionality
+    %VISION: 
+    %   Object to encapsulate all image processing functionality
     
     properties
         % static properties and/or dependencies
@@ -17,7 +18,8 @@ classdef Vision
     
     methods
         function obj = Vision(inputEnvironment, inputPlotter)
-            %VISION Construct and configure a vision object
+            %VISION: 
+            %   Construct and configure a vision object
             
             obj.Environment = inputEnvironment;
             obj.Plotter = inputPlotter;
@@ -43,14 +45,16 @@ classdef Vision
         end
         
         function obj = GetColorImage(obj)
-            %GetColorImage: Takes and plots color image with environment camera
+            %GetColorImage: 
+            %   Takes and plots color image with environment camera
             
             obj.ColorImage = getsnapshot(obj.Camera);
             obj.Plotter = obj.Plotter.PlotColorImage(obj.ColorImage);
         end
         
         function obj = GetBWImage(obj)
-            %GetBWImage: Takes and plots image with environment camera
+            %GetBWImage: 
+            %   Takes and plots image with environment camera
             %   converted to black and white given BWThreshold and
             %   AnchorSize
             
@@ -71,11 +75,17 @@ classdef Vision
             % get and plot new BW image
             obj = obj.GetBWImage();
             
-            % get anchor points in the field as cell array
+            % get anchor points in the field as cell array and sanity check
             anchorPoints = obj.GetAnchorPoints();
             
-            % get n-tuples grouping anchor points (where n=AnchorsPerRobot)
+            % get n-tuples grouping anchor points (where n=AnchorsPerRobot
+            % and sanity check
             anchorGroups = obj.GetAnchorGroups(anchorPoints);
+            assert(numel(anchorPoints) == obj.Environment.NumRobots * obj.Environment.AnchorsPerRobot);
+
+            
+            % create position objects from anchor point triplets
+            positions = obj.GetPositions(anchorPoints, anchorGroups);
             
             % TODO: create position objects given points
             % TODO: associate position objects with IDs in map<ID, pos>
@@ -90,19 +100,32 @@ classdef Vision
             
         end
         
+        function positions = GetPositions(obj, anchorPoints, anchorGroups)
+           %GetPositions: 
+           %    Takes cell array of anchorPoints, along with cell
+           %    array of anchorGroups containing index-triplets of
+           %    grouped entries in anchorPoints.
+           %    Returns cell array of size NumRobots x 1 containing
+           %    position objects of grouped anchorPoints
+           %    (i.e., the points with indices grouped in a triplet in the
+           %    anchorGroups cell array)
+           
+           for i = 1:NumRobots
+               
+           end
+        end
+        
         function anchorPoints = GetAnchorPoints(obj)
-            %GetAnchorPoints: Takes image and returns cell array of Point
+            %GetAnchorPoints: 
+            %   Takes image and returns cell array of Point
             %   objects, one for each anchor blob found in the image
             
             % find contiguous white blobs in image
             [anchorBlobs, numBlobs] = bwlabel(obj.BWImage);
             
-            % assert proper number of blobs were found
-            if numBlobs ~= obj.Environment.NumRobots * obj.Environment.AnchorsPerRobot
-                warning('MISMATCHED ANCHOR COUNT: ensure NumRobots and AnchorsPerRobot are correct in Environment')
-                return;
-            end
-            
+            % check that proper number of blobs were found
+            Utils.Verify(numBlobs == obj.Environment.NumRobots * obj.Environment.AnchorsPerRobot, Utils.InvalidAnchorCountMessage);
+                            
             % find centroids of anchor points in field as x, y pairs 
             rawAnchorPoints = regionprops(anchorBlobs, 'Centroid');
         
@@ -117,7 +140,8 @@ classdef Vision
         end
         
         function anchorGroups = GetAnchorGroups(obj, anchorPoints)
-            %GetAnchorGroups: Takes cell vector of Point objects marking
+            %GetAnchorGroups: 
+            %   Takes cell vector of Point objects marking
             %   anchor points as ordered pairs.
             %   Returns cell vector of length NumRobots where each cell is 
             %   a vector of length AnchorsPerRobot and contains the indices 
@@ -178,10 +202,14 @@ classdef Vision
                   anchorGroups{groupsFound} = anchorGroup;
                end
             end
+            
+            % check that proper number of groups were found
+            Utils.Verify(numel(anchorGroups) == obj.Environment.NumRobots, Utils.InvalidRobotCountMessage);
         end
         
         function found = ContainsAnchor(obj, anchorGroups, target)
-            %ContainsAnchor: Takes cell array of anchorGroups
+            %ContainsAnchor: 
+            %   Takes cell array of anchorGroups
             %   index-triplets and returns true if the triplet target is
             %   present in the array; else, false
             
@@ -199,7 +227,8 @@ classdef Vision
         end
         
         function threshold = GetBWThreshold(obj)
-            %FindBWThreshold: Determine optimal black/white cutoff
+            %FindBWThreshold: 
+            %   Determine optimal black/white cutoff
             %   threshold to properly deduce locations of robot visual anchors
             
             threshold = 0.9;
