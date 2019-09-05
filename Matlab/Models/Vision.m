@@ -74,7 +74,9 @@ classdef Vision
             % get anchor points in the field as cell array
             anchorPoints = obj.GetAnchorPoints();
             
-            % TODO: group anchor points with nearest neighbor search
+            % get n-tuples grouping anchor points (where n=AnchorsPerRobot)
+            anchorGroups = obj.GetAnchorGroups(anchorPoints);
+            
             % TODO: create position objects given points
             % TODO: associate position objects with IDs in map<ID, pos>
             % TODO: update environment positions object
@@ -111,6 +113,88 @@ classdef Vision
                 orderedPair = rawAnchorPoints(i).Centroid;
                 anchor = Point(orderedPair(1), orderedPair(2));
                 anchorPoints{i} = anchor;
+            end
+        end
+        
+        function anchorGroups = GetAnchorGroups(obj, anchorPoints)
+            %GetAnchorGroups: Takes cell vector of Point objects marking
+            %   anchor points as ordered pairs.
+            %   Returns cell vector of length NumRobots where each cell is 
+            %   a vector of length AnchorsPerRobot and contains the indices 
+            %   of the anchors corresponding to a single robot.
+            %   NOTE: Assumes 3 anchors per robot to enable heading
+            %   determination.
+            
+            % create anchorPoints x 1 cell array to store triplets
+            anchorGroups = cell(obj.Environment.NumRobots, 1);
+            
+            % create counter to track number of groups found
+            groupsFound = 0;
+            
+            for i = 1:numel(anchorPoints)
+               % consider each point in the list
+               currentAnchor = anchorPoints{i};
+               
+               % initialize nearest neighbors
+               neighborOneId = 0;
+               neighborOneDist = Inf;
+               neighborTwoId = 0;
+               neighborTwoDist = Inf;
+               
+               for j = 1:numel(anchorPoints)
+                   % consider all other points in this list EXCEPT i=j
+                   if i == j
+                      continue; % skip this iteration
+                   end
+                   
+                   otherAnchor = anchorPoints{j};
+                   distance = currentAnchor.Distance(otherAnchor);
+                   
+                   if (distance < neighborOneDist)
+                       % update nearest AND second nearest neighbor
+                       neighborTwoId = neighborOneId;
+                       neighborTwoDist = neighborOneDist;
+                       
+                       neighborOneId = j;
+                       neighborOneDist = distance;
+                   elseif (currentAnchor.Distance(otherAnchor) < neighborTwoDist)
+                      % update only second nearest neighbor 
+                      neighborTwoId = j;
+                      neighborTwoDist = distance;
+                   end                 
+               end
+               
+               % at this point, currentAnchor, neighborOne, and neighborTwo
+               % constitute a triplet of indices to be returned together
+               
+               % create triplet and sort
+               anchorGroup = [i, neighborOneId, neighborTwoId];
+               anchorGroup = sort(anchorGroup);
+               
+               % add triplet to anchorGroups cell array of triplet vectors
+               % if not already present
+               if ~ContainsAnchor(obj, anchorGroups, anchorGroup)
+                  groupsFound = groupsFound + 1;
+                  anchorGroups{groupsFound} = anchorGroup;
+               end
+            end
+        end
+        
+        function found = ContainsAnchor(obj, anchorGroups, target)
+            %ContainsAnchor: Takes cell array of anchorGroups
+            %   index-triplets and returns true if the triplet target is
+            %   present in the array; else, false
+            
+            % set flag
+            found = false;
+            
+            for k = 1:numel(anchorGroups)
+                otherGroup = anchorGroups{k};
+                if isequal(otherGroup, target)
+                    % found
+                    found = true;
+                    return;
+                end
             end
         end
         
