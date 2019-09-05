@@ -75,29 +75,21 @@ classdef Vision
             % get and plot new BW image
             obj = obj.GetBWImage();
             
-            % get anchor points in the field as cell array and sanity check
+            % get anchor points in the field as cell array
             anchorPoints = obj.GetAnchorPoints();
             
-            % get n-tuples grouping anchor points (where n=AnchorsPerRobot
-            % and sanity check
+            % get n-tuples grouping anchor points (where n=AnchorsPerRobot)
             anchorGroups = obj.GetAnchorGroups(anchorPoints);
-            assert(numel(anchorPoints) == obj.Environment.NumRobots * obj.Environment.AnchorsPerRobot);
-
             
-            % create position objects from anchor point triplets
+            % create cell array of position objects from anchor point triplets
             positions = obj.GetPositions(anchorPoints, anchorGroups);
             
             % TODO: create position objects given points
+            % UPDATE POSITION CONSTRUCTOR
             % TODO: associate position objects with IDs in map<ID, pos>
             % TODO: update environment positions object
-            disp('hello');
-            
-            
-            
-            % group nearest n = AnchorsPerRobot blobs into robot units
-            
-            
-            
+            disp('hello');        
+        
         end
         
         function positions = GetPositions(obj, anchorPoints, anchorGroups)
@@ -110,9 +102,22 @@ classdef Vision
            %    (i.e., the points with indices grouped in a triplet in the
            %    anchorGroups cell array)
            
-           for i = 1:NumRobots
+           % create empty cell array in which to return Positions
+           positions = cell(size(anchorGroups));
+           
+           for i = 1:obj.Environment.NumRobots
+               % get current three anchor points
+               anchorGroup = anchorGroups{i};
+               anchors = anchorPoints(anchorGroup);
                
+               % construct and store position from current three anchor
+               % points
+               position = Position(anchors{1}, anchors{2}, anchors{3});
+               positions{i} = position;
            end
+           
+           % check that proper number of position objects were constructed
+           Utils.Verify(numel(positions) == obj.Environment.NumRobots, Utils.InvalidRobotCountMessage);
         end
         
         function anchorPoints = GetAnchorPoints(obj)

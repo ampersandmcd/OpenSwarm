@@ -17,6 +17,11 @@ classdef Position
             %POSITION: Construct a position object given only the three
             %   anchor points represented as Point objects
             
+            %TODO: implement
+            assert(false, "not yet implemented");
+            obj.AnchorL = inputAnchorA;
+            obj.AnchorR = inputAnchorB;
+            obj.AnchorH = inputAnchorC;
             
         end
     end
