@@ -12,6 +12,12 @@ classdef Point
             obj.X = inputX;
             obj.Y = inputY;
         end
+        
+        function distance = Distance(obj, otherPoint)
+           dx = obj.X - otherPoint.X;
+           dy = obj.Y - otherPoint.Y;
+           distance = sqrt(dx^2 + dy^2);
+        end
     end
 end
 
