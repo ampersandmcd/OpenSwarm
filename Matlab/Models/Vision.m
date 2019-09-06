@@ -126,7 +126,11 @@ classdef Vision
             %   objects, one for each anchor blob found in the image
             
             % find contiguous white blobs in image
-            [anchorBlobs, numBlobs] = bwlabel(obj.BWImage);
+            % NOTE: must VERTICALLY FLIP BWImage before finding blobs due
+            % to [row, column] vs. [x, y] notation; row in BW / logical
+            % matrix is opposite of y value (low y = high row #)
+            flippedBW = flip(obj.BWImage, 1);    % flip on dimension 1
+            [anchorBlobs, numBlobs] = bwlabel(flippedBW);
             
             % check that proper number of blobs were found
             Utils.Verify(numBlobs == obj.Environment.NumRobots * obj.Environment.AnchorsPerRobot, Utils.InvalidAnchorCountMessage);
