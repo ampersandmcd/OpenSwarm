@@ -16,3 +16,4 @@ messenger = Messenger(environment, plotter);
 
 % test camera
 vision = vision.UpdatePositions();
+vision = vision.UpdatePositions();

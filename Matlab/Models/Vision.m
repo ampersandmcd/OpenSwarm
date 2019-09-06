@@ -84,12 +84,50 @@ classdef Vision
             % create cell array of position objects from anchor point triplets
             positions = obj.GetPositions(anchorPoints, anchorGroups);
             
-            % TODO: create position objects given points
-            % UPDATE POSITION CONSTRUCTOR
-            % TODO: associate position objects with IDs in map<ID, pos>
-            % TODO: update environment positions object
-            disp('hello');        
-        
+            % update environment positions
+            if isempty(obj.Environment.Positions)
+                % first iteration; positions map is not yet initialized
+                % assign IDs to robots in order of distance from the origin
+                % i.e., ID=1 assigned to robot closest to origin
+                %       ID=2 assigned to robot second closest to origin,
+                %       etc.
+                m = containers.Map;
+                
+                % assign position i to map with key 'i'
+                for i = 1:obj.Environment.NumRobots
+                   m(num2str(i)) = positions{i};
+                end
+                
+                obj.Environment.Positions = m;
+            else
+               % we already have an Environment.Positions map in the form
+               % <ID, Position>. Use nearest neighbor search to set the ID
+               % of each new point to the closest from the previous frame
+               m = containers.Map;
+               
+               for i = 1:obj.Environment.NumRobots
+                   newPosition = positions{i};
+                   nearestNeighbor = 0;
+                   nearestNeighborDistance = Inf;
+                   for j = 1:obj.Environment.NumRobots
+                       candidate = obj.Environment.Positions(num2str(j));
+                       distance = newPosition.Center.Distance(candidate.Center);
+                       if  distance < nearestNeighborDistance
+                          nearestNeighbor = j;
+                          nearestNeighborDistance = distance;
+                       end
+                   end
+                   % update position with ID of nearest neighbor, which is
+                   % this robot's old position
+                   m(num2str(nearestNeighbor)) = newPosition;
+               end
+               
+               obj.Environment.Positions = m;
+            end       
+            
+            % update plotted environment positions
+            % TODO
+            obj.Plotter.PlotPositions();
         end
         
         function positions = GetPositions(obj, anchorPoints, anchorGroups)

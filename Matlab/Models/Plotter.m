@@ -37,6 +37,11 @@ classdef Plotter
            %PlotBWImage: display a BW image on BWImageAxes
            imshow(img, 'Parent', obj.BWImageAxes);
         end
+        
+        function obj = PlotPositions(obj)
+            %PlotPositions: plot positions from Environment
+            assert(false, 'Not yet implemented');
+        end
     end
 end
 

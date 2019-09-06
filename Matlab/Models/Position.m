@@ -60,7 +60,10 @@ classdef Position
             end
             
             obj.Heading = rad2deg(theta);
-            
+        end
+        
+        function distance = DistanceFromOrigin(obj)
+            distance = obj.Center.DistanceFromOrigin();
         end
     end
 end

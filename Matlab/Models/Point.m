@@ -18,6 +18,10 @@ classdef Point
            dy = obj.Y - otherPoint.Y;
            distance = sqrt(dx^2 + dy^2);
         end
+        
+        function distance = DistanceFromOrigin(obj)
+           distance = sqrt(obj.X^2 + obj.Y^2); 
+        end
     end
 end
 
