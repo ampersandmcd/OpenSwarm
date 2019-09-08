@@ -1,4 +1,4 @@
-classdef Environment
+classdef Environment < handle
     %ENVIRONMENT: Object to represent properties of test environment
     
     properties

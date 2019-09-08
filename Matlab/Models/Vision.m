@@ -1,5 +1,5 @@
 classdef Vision
-    %VISION: 
+    %Vision: 
     %   Object to encapsulate all image processing functionality
     
     properties
@@ -18,7 +18,7 @@ classdef Vision
     
     methods
         function obj = Vision(inputEnvironment, inputPlotter)
-            %VISION: 
+            %Vision: 
             %   Construct and configure a vision object
             
             obj.Environment = inputEnvironment;
@@ -84,50 +84,65 @@ classdef Vision
             % create cell array of position objects from anchor point triplets
             positions = obj.GetPositions(anchorPoints, anchorGroups);
             
-            % update environment positions
+            % create map <ID, position> to update with      
             if isempty(obj.Environment.Positions)
-                % first iteration; positions map is not yet initialized
-                % assign IDs to robots in order of distance from the origin
-                % i.e., ID=1 assigned to robot closest to origin
-                %       ID=2 assigned to robot second closest to origin,
-                %       etc.
-                m = containers.Map;
-                
-                % assign position i to map with key 'i'
-                for i = 1:obj.Environment.NumRobots
-                   m(num2str(i)) = positions{i};
+                % first iteration
+                map = InitializePositions(obj, positions);
+            else
+                % all successive iterations
+                map = MatchPositions(obj, positions);
+            end
+            
+            % update Environment positions map
+            obj.Environment.Positions = map;
+
+            % update plotted environment positions
+            obj.Plotter.PlotPositions();
+        end
+        
+        function map = InitializePositions(obj, positions)
+            %InitializePositions:
+            %	Called on first iteration before positions map is
+            %	initialized - initializes positions map.
+            %	Assigns IDs to robots in order of distance from the origin
+            %   i.e., ID=1 assigned to robot closest to origin
+            %         ID=2 assigned to robot second closest to origin,
+            %         etc.
+            
+            map = containers.Map;
+            
+            % assign position i to map with key 'i'
+            for i = 1:obj.Environment.NumRobots
+                map(num2str(i)) = positions{i};
+            end
+        end
+        
+        function map = MatchPositions(obj, positions)
+            %MatchPositions
+            %	Called on second and further iterations after positions map
+            %	is initialized in the form <ID, Position>.
+            %	Use nearest neighbor search to set the ID
+            %	of each new point to the closest from the previous frame.
+            
+            map = containers.Map;
+            
+            for i = 1:obj.Environment.NumRobots
+                newPosition = positions{i};
+                nearestNeighbor = 0;
+                nearestNeighborDistance = Inf;
+                for j = 1:obj.Environment.NumRobots
+                    candidate = obj.Environment.Positions(num2str(j));
+                    distance = newPosition.Center.Distance(candidate.Center);
+                    if  distance < nearestNeighborDistance
+                        nearestNeighbor = j;
+                        nearestNeighborDistance = distance;
+                    end
                 end
                 
-                obj.Environment.Positions = m;
-            else
-               % we already have an Environment.Positions map in the form
-               % <ID, Position>. Use nearest neighbor search to set the ID
-               % of each new point to the closest from the previous frame
-               m = containers.Map;
-               
-               for i = 1:obj.Environment.NumRobots
-                   newPosition = positions{i};
-                   nearestNeighbor = 0;
-                   nearestNeighborDistance = Inf;
-                   for j = 1:obj.Environment.NumRobots
-                       candidate = obj.Environment.Positions(num2str(j));
-                       distance = newPosition.Center.Distance(candidate.Center);
-                       if  distance < nearestNeighborDistance
-                          nearestNeighbor = j;
-                          nearestNeighborDistance = distance;
-                       end
-                   end
-                   % update position with ID of nearest neighbor, which is
-                   % this robot's old position
-                   m(num2str(nearestNeighbor)) = newPosition;
-               end
-               
-               obj.Environment.Positions = m;
-            end       
-            
-            % update plotted environment positions
-            % TODO
-            obj.Plotter.PlotPositions();
+                % update position with ID of nearest neighbor, which is
+                % this robot's old position
+                map(num2str(nearestNeighbor)) = newPosition;
+            end
         end
         
         function positions = GetPositions(obj, anchorPoints, anchorGroups)
