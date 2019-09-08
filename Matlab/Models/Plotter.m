@@ -101,7 +101,7 @@ classdef Plotter
                 text(obj.LocationAxes, (position.Center.X - obj.XLabelOffset), (position.Center.Y - obj.YLabelOffset), num2str(position.Heading), 'Color', obj.HeadingTextColor)
 
                 % plot and label target
-                scatter(obj.LocationAxes, target.Center.X, target.Center.Y, obj.DotSize, obj.PositionColor);
+                scatter(obj.LocationAxes, target.Center.X, target.Center.Y, obj.DotSize, obj.TargetColor);
                 text(obj.LocationAxes, (target.Center.X + obj.XLabelOffset), (target.Center.Y + obj.YLabelOffset), num2str(i), 'Color', obj.TargetTextColor)
                 
             end

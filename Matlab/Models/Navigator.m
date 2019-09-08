@@ -60,8 +60,8 @@ classdef Navigator
                     % map for this target set
                     targetX = rawTargets(row, col);
                     targetY = rawTargets(row, col+1);
-                    targetPoint = Point(targetX, targetY);
-                    targetMap(num2str(row)) = targetPoint;
+                    targetPosition = Position.TargetPosition(targetX, targetY);
+                    targetMap(num2str(row)) = targetPosition;
                 end
                 
                 % add current targetMap target set to queue
@@ -70,6 +70,7 @@ classdef Navigator
             end
             
             obj.TargetQueue = targetQueue;
+            obj.NumTargets = numel(targetQueue);
             
             obj = obj.UpdateTargets();
         end

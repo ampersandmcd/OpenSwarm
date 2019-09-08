@@ -10,8 +10,21 @@ classdef Position
         Heading;    % heading angle robot is facing
     end
     
-    methods
-                
+    methods(Static)
+        
+        function obj = TargetPosition(inputX, inputY)
+            %TargetPosition: Construct and return position object given only center X and
+            %   center Y.
+            %   Used to construct position of target in field.
+            %   Leaves Nose and Heading properties unset (not needed for
+            %   target).
+            
+            obj.Center = Point(inputX, inputY);
+        end
+        
+    end
+        
+    methods                
         function obj = Position(inputAnchorA, inputAnchorB, inputAnchorC)
             %Position: Construct a position object given the three
             %   anchor points represented as Point objects.
@@ -64,15 +77,7 @@ classdef Position
             obj.Heading = rad2deg(theta);
         end
         
-        function obj = TargetPosition(inputX, inputY)
-            %TargetPosition: Construct position object given only center X and
-            %   center Y.
-            %   Used to construct position of target in field.
-            %   Leaves Nose and Heading properties unset (not needed for
-            %   target).
-            
-            obj.Center = Point(inputX, inputY);
-        end
+        
         
         function distance = DistanceFromOrigin(obj)
             distance = obj.Center.DistanceFromOrigin();
