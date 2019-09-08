@@ -47,18 +47,18 @@ classdef Navigator
             
             % read and verify CSV format
             rawTargets = csvread(filename);
-            Utils.Verify(size(rawTargets, 1) == obj.Environment.NumRobots, Utils.InvalidTargetRowsMessage);
+            Utils.Verify(size(rawTargets, 1) == obj.Environment.NumRobots, 'Target CSV rows mismatch the expected number of robots');
             
             xCoords = rawTargets(:, 1:2:end);
-            Utils.Verify(numel(xCoords(xCoords >= 0)) == numel(xCoords) && numel(xCoords(xCoords <= obj.Environment.XAxisSize)) == numel(xCoords), Utils.TargetXOOBMessage);
+            Utils.Verify(numel(xCoords(xCoords >= 0)) == numel(xCoords) && numel(xCoords(xCoords <= obj.Environment.XAxisSize) == numel(xCoords)), 'Target CSV contains x coordinates out of bounds');
             
             yCoords = rawTargets(:, 2:2:end);
-            Utils.Verify(numel(yCoords(yCoords >= 0)) == numel(yCoords) && numel(yCoords(yCoords <= obj.Environment.YAxisSize)) == numel(yCoords), Utils.TargetYOOBMessage);
+            Utils.Verify(yCoords(yCoords >= 0) == yCoords && yCoords(yCoords <= obj.Environment.YAxisSize) == yCoords, 'Target CSV contains y coordinates out of bounds');
             
             Utils.Verify(size(xCoords, 2) == size(yCoords, 2), 'Target CSV contains uneven number of x and y coordinates');
             
             % construct TargetQueue from CSV data
-            targetQueue = cell(round(size(rawTargets, 2) / 2), 1);
+            targetQueue = cell(size(rawTargets, 2) / 2, 1);
             
             for col = 1:2:size(rawTargets, 2)
                 % iterate over EVERY SECOND column (sequence) of target

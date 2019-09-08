@@ -5,6 +5,10 @@ classdef Utils
     properties(Constant)
         InvalidAnchorCountMessage = "The expected number of anchors were not detected in the webcam view."
         InvalidRobotCountMessage = "The expected number of robots were not found in the webacam view."
+    
+        InvalidTargetRowsMessage = 'Target CSV rows mismatch the expected number of robots'
+        TargetXOOBMessage = 'Target CSV contains x coordinates out of bounds';
+        TargetYOOBMessage = 'Target CSV contains y coordinates out of bounds';
     end
     
     methods(Static)
