@@ -12,12 +12,14 @@ classdef Environment < handle
         
         Iteration;      % counter variable tracking number of commands sent
         Positions;      % map<int, Position> of robots in field
+        Targets;        % map<int, Position> of targets for robots in field
         %TODO: add logging properties to environment
     end
     
     methods
         function obj = Environment()
-            %ENVIRONMENT: Construct an environment object
+            %Environment:
+            %   Construct an environment object
             
             % reset workspace and camera & UDP I/O
             try
@@ -38,7 +40,8 @@ classdef Environment < handle
         end
                 
         function obj = Iterate(obj)
-            %Iterate: Increments iteration count of environment
+            %Iterate: 
+            %   Increments iteration count of environment
             obj.Iteration = obj.Iteration + 1;
         end        
     end
