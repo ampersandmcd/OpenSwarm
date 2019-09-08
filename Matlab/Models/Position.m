@@ -11,9 +11,11 @@ classdef Position
     end
     
     methods
+                
         function obj = Position(inputAnchorA, inputAnchorB, inputAnchorC)
-            %POSITION: Construct a position object given only the three
-            %   anchor points represented as Point objects
+            %Position: Construct a position object given the three
+            %   anchor points represented as Point objects.
+            %   Used to construct position of actual robot in field
             
             % determine centroid of robot
             centerX = mean([inputAnchorA.X, inputAnchorB.X, inputAnchorC.X]);
@@ -60,6 +62,16 @@ classdef Position
             end
             
             obj.Heading = rad2deg(theta);
+        end
+        
+        function obj = TargetPosition(inputX, inputY)
+            %TargetPosition: Construct position object given only center X and
+            %   center Y.
+            %   Used to construct position of target in field.
+            %   Leaves Nose and Heading properties unset (not needed for
+            %   target).
+            
+            obj.Center = Point(inputX, inputY);
         end
         
         function distance = DistanceFromOrigin(obj)

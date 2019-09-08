@@ -9,6 +9,10 @@ plotter = Plotter(environment);
 % initialize webcam tracking
 vision = Vision(environment, plotter);
 
+% initialize targets and navigation
+navigator = Navigator(environment);
+navigator = navigator.SetTargetsFromCSV('./test_targets.csv');
+
 % initialize communications
 messenger = Messenger(environment, plotter);
 
