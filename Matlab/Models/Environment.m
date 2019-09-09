@@ -3,16 +3,19 @@ classdef Environment < handle
     
     properties
         % static configuration settings
-        NumRobots;      % number of robots in field
-        AnchorsPerRobot;   % number of visual anchors for tracking per robot
-        XAxisSize;      % width of field in pixels (determined by overhead webcam)
-        YAxisSize;      % height of field in pixels (determined by overhead webcam)
-        UDPTransmission;% boolean indicating whether UDP transmissions will be sent
-        UDPReception;   % boolean indicating whether UDP messages will be listened for
+        NumRobots;              % number of robots in field
+        AnchorsPerRobot;        % number of visual anchors for tracking per robot
+        XAxisSize;              % width of field in pixels (determined by overhead webcam)
+        YAxisSize;              % height of field in pixels (determined by overhead webcam)
+        UDPTransmission;        % boolean indicating whether UDP transmissions will be sent
+        UDPReception;           % boolean indicating whether UDP messages will be listened for
+        ConvergenceThreshold;   % distance (px) to check against when determining if a robot has converged upon its target point
+        FullSpeedThreshold      % distance (px) to check against when determining if robot should burst at full speed or reduced speed
         
+        % dynamic properties
         Iteration;      % counter variable tracking number of commands sent
-        Positions;      % map<int, Position> of robots in field
-        Targets;        % map<int, Position> of targets for robots in field
+        Positions;      % map<str(idnumber), Position> of robots in field
+        Targets;        % map<str(idnumber), Position> of targets for robots in field
         %TODO: add logging properties to environment
     end
     
@@ -37,6 +40,8 @@ classdef Environment < handle
             obj.Iteration = 0;      
             obj.UDPTransmission = true;
             obj.UDPReception = false;
+            obj.ConvergenceThreshold = 50;
+            obj.FullSpeedThreshold = 100;
         end
                 
         function obj = Iterate(obj)

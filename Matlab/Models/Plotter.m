@@ -92,13 +92,14 @@ classdef Plotter
                 position = obj.Environment.Positions(num2str(i));
                 target = obj.Environment.Targets(num2str(i));
                 
-                % plot and label position
+                % plot and label position, heading, (x,y) coords:
                 scatter(obj.LocationAxes, position.Center.X, position.Center.Y, obj.DotSize, obj.PositionColor);
-                text(obj.LocationAxes, (position.Center.X + obj.XLabelOffset), (position.Center.Y + obj.YLabelOffset), num2str(i), 'Color', obj.PositionTextColor)
+                quiver(obj.LocationAxes, position.Center.X, position.Center.Y, (position.Nose.X - position.Center.X) * obj.HeadingScalar, (position.Nose.Y - position.Center.Y) * obj.HeadingScalar, 'Color', obj.HeadingColor);
+                message = sprintf('%0.0f\n(%0.0f, %0.0f)\n%0.0f°', i, position.Center.X, position.Center.Y, position.Heading);
+                text(obj.LocationAxes, (position.Center.X + obj.XLabelOffset), (position.Center.Y + obj.YLabelOffset), message, 'Color', obj.PositionTextColor)
                 
                 % plot and label heading from center through nose point
-                quiver(obj.LocationAxes, position.Center.X, position.Center.Y, (position.Nose.X - position.Center.X) * obj.HeadingScalar, (position.Nose.Y - position.Center.Y) * obj.HeadingScalar, 'Color', obj.HeadingColor);
-                text(obj.LocationAxes, (position.Center.X - obj.XLabelOffset), (position.Center.Y - obj.YLabelOffset), num2str(position.Heading), 'Color', obj.HeadingTextColor)
+                %text(obj.LocationAxes, (position.Center.X - obj.XLabelOffset), (position.Center.Y - obj.YLabelOffset), num2str(position.Heading), 'Color', obj.HeadingTextColor)
 
                 % plot and label target
                 scatter(obj.LocationAxes, target.Center.X, target.Center.Y, obj.DotSize, obj.TargetColor);

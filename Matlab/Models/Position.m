@@ -58,23 +58,9 @@ classdef Position
             %   angles increase from [0, 360] CCW, as is standard
             dx = obj.Nose.X - obj.Center.X;
             dy = obj.Nose.Y - obj.Center.Y;
-            theta = 0;
             
-            if dx > 0 && dy > 0
-                % first quadrant
-                theta = atan(dy/dx);
-            elseif dx < 0 && dy > 0
-                % second quadrant; add pi since range(atan) = [-pi/2, pi/2]
-                theta = atan(dy/dx) + pi;
-            elseif dx < 0 && dy < 0
-                % third quadrant; add pi since range(atan) = [-pi/2, pi/2]
-                theta = atan(dy/dx) + pi;                
-            else 
-                % fourth quadrant; add 2*pi since range(atan) = [-pi/2, pi/2]
-                theta = atan(dy/dx) + 2*pi;
-            end
-            
-            obj.Heading = rad2deg(theta);
+            theta = Utils.ArctanInDegrees(dx, dy);
+            obj.Heading = theta;
         end
         
         

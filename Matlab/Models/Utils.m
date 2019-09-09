@@ -13,9 +13,38 @@ classdef Utils
     
     methods(Static)
         function Verify(condition, message)
+            %Verify:
+            %   Print a warning message if condition is false to assist in
+            %   debugging.
+            %
+            %   Can easily be changed to assert false and halt execution if
+            %   desired.
+            
             if ~condition
                 warning(message);
             end
+        end
+        
+        function theta = ArctanInDegrees(dx, dy)
+            %ArctanInDegrees:
+            %   Return the heading angle of the vector defined by [dx, dy]
+            %   in degrees in the range [0, 360]
+            
+            if dx > 0 && dy > 0
+                % first quadrant
+                theta = atan(dy/dx);
+            elseif dx < 0 && dy > 0
+                % second quadrant; add pi since range(atan) = [-pi/2, pi/2]
+                theta = atan(dy/dx) + pi;
+            elseif dx < 0 && dy < 0
+                % third quadrant; add pi since range(atan) = [-pi/2, pi/2]
+                theta = atan(dy/dx) + pi;                
+            else 
+                % fourth quadrant; add 2*pi since range(atan) = [-pi/2, pi/2]
+                theta = atan(dy/dx) + 2*pi;
+            end
+            
+            theta = rad2deg(theta);
         end
     end
 end

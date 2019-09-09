@@ -33,6 +33,77 @@ classdef Navigator
             end            
         end
         
+        function directions = GetDirections(obj)
+            %GetDirections:
+            %   Given Environment.Positions and Environment.Targets,
+            %   create and return a map<str(idnum), Burst> containing
+            %   burst directions to send to each robot with index idnum
+            
+            directions = containers.Map;
+            
+            for i = 1:obj.Environment.NumRobots
+               % access current position and target from global map
+               position = obj.Environment.Positions(num2str(i));
+               target = obj.Environment.Targets(num2str(i));
+               
+               % determine necessary turn angle
+               % note: CCW is +, CW is -
+               dx = target.Center.X - position.Center.X;
+               dy = target.Center.Y - position.Center.Y;
+               
+               targetAngle = Utils.ArctanInDegrees(dx, dy);
+               currentAngle = position.Heading;
+               turnAngle = targetAngle - currentAngle;
+               
+               % adjust turnAngle if necessary to be within [-180, 180]
+               if turnAngle > 180
+                   turnAngle = turnAngle - 360; 
+               elseif turnAngle < -180
+                   turnAngle = turnAngle + 360;
+               end
+               
+               % determine necessary Burst speed
+               distance = position.Center.Distance(target.Center);
+               
+               if distance < obj.Environment.ConvergenceThreshold
+                   speed = 0;
+               elseif distance > obj.Environment.FullSpeedThreshold
+                   speed = 100;
+               else
+                   speed = 100*(distance - obj.Environment.ConvergenceThreshold)/(obj.Environment.FullSpeedThreshold - obj.Environment.ConvergenceThreshold);
+               end
+               
+               % construct and save Burst object in directions map
+               burst = Burst(speed, turnAngle);
+               directions(num2str(i)) = burst; 
+            end
+            
+            % returns completed directions map
+        end
+        
+        function isConverged = IsConverged(obj)
+            %IsConverged:
+            %   Check to see if all robots are within Environment.ConvergenceThreshold
+            %   of their current target point.
+            %   Return true if so; else, return false
+            
+            isConverged = true;
+            
+            for i = 1:obj.Environment.NumRobots
+               % access current position and target from global map
+               position = obj.Environment.Positions(num2str(i));
+               target = obj.Environment.Targets(num2str(i));
+               
+               distance = position.Center.Distance(target.Center);
+               
+               if distance > obj.Environment.ConvergenceThreshold
+                   % robot i is not converged; return false on break
+                   isConverged = false;
+                   return;
+               end
+            end
+        end
+        
         function obj = SetTargetsFromCSV(obj, filename)
             %SetTargetsFromCSV:
             %   Create list of map<int, position> specifying targets and
@@ -81,9 +152,11 @@ classdef Navigator
                 targetQueue{targetIndex} = targetMap;
             end
             
+            % set finished targetQueue
             obj.TargetQueue = targetQueue;
             obj.NumTargets = numel(targetQueue);
             
+            % set initial targets
             obj = obj.UpdateTargets();
         end
     end

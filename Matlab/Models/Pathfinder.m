@@ -18,7 +18,12 @@ messenger = Messenger(environment, plotter);
 
 
 
-% test camera
+% test
 vision = vision.UpdatePositions();
+flag = navigator.IsConverged();
+directions = navigator.GetDirections();
+% successfully returned directions map
 navigator = navigator.UpdateTargets();
+% successfully updated targets
 vision = vision.UpdatePositions();
+%successfully reset positions
