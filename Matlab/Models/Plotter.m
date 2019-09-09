@@ -44,8 +44,8 @@ classdef Plotter
             obj.TargetColor = 'red';
             obj.TargetTextColor = 'red';
             
-            obj.HeadingColor = 'green';
-            obj.HeadingTextColor = 'green';
+            obj.HeadingColor = 'blue';
+            obj.HeadingTextColor = 'blue';
             
             % configure axes in which to plot
             subplot(2,2,1);
