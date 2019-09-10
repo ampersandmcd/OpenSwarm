@@ -18,15 +18,29 @@ messenger = Messenger(environment, plotter);
 
 
 
-% test
+%%%%%%%%%%%%%% testing %%%%%%%%%%%%%%%%%%%%%
+
+% update positions of robots in field
 vision = vision.UpdatePositions();
+
+% check if robots are converged on targets
 flag = navigator.IsConverged();
+
+% get and send directions via UDP
 directions = navigator.GetDirections();
-% successfully returned directions map
+messenger.SendDirections(directions);
+
+% update targets map
 navigator = navigator.UpdateTargets();
-% successfully updated targets
+
+% update positions map
 vision = vision.UpdatePositions();
-%successfully reset positions
+
+% get and send new directions via UDP
 directions = navigator.GetDirections();
-%try to reset directions map
+messenger.SendDirections(directions);
+
+
+
+
 disp('hello');
