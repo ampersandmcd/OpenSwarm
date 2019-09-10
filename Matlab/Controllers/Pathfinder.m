@@ -38,7 +38,7 @@ for i = 1:navigator.NumTargets
         messenger.SendDirections(directions);
 
         % wait for directions to execute
-        delay(environment.Delay);
+        pause(environment.Delay);
 
         % update positions
         vision.UpdatePositions();
