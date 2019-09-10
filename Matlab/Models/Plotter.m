@@ -47,34 +47,47 @@ classdef Plotter
             obj.HeadingColor = 'blue';
             obj.HeadingTextColor = 'blue';
             
-            % configure axes in which to plot
+            % configure axes in which to plot: set title, aspect ratio and
+            % axis limits
             subplot(2,2,1);
             title('Webcam: Color');
             obj.ColorImageAxes = gca();
+            obj.ColorImageAxes.DataAspectRatio = [1,1,1];
+            axis(obj.ColorImageAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
             
             subplot(2,2,2);
             title('Webcam: BW');
             obj.BWImageAxes = gca();
+            obj.BWImageAxes.DataAspectRatio = [1,1,1];
+            axis(obj.BWImageAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
             
             subplot(2,2,3);
             title('Robot Locations');
             obj.LocationAxes = gca();
+            obj.LocationAxes.DataAspectRatio = [1,1,1];
+            axis(obj.LocationAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
             
             subplot(2,2,4);
             title('Auxiliary');
             obj.LightmapAxes = gca();
+            obj.LightmapAxes.DataAspectRatio = [1,1,1];
+            axis(obj.LightmapAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
         end
         
         function obj = PlotColorImage(obj, img)
             %PlotColorImage: display a color image on ColorImageAxes
             imshow(img, 'Parent', obj.ColorImageAxes);
             title(obj.ColorImageAxes, 'Webcam: Color');
+            obj.ColorImageAxes.Visible = 'On';
+            set(obj.ColorImageAxes, 'box', 'off');
         end
         
         function obj = PlotBWImage(obj, img)
             %PlotBWImage: display a BW image on BWImageAxes
             imshow(img, 'Parent', obj.BWImageAxes);
             title(obj.BWImageAxes, 'Webcam: BW');
+            obj.BWImageAxes.Visible = 'On';
+            set(obj.BWImageAxes, 'box', 'off');
         end
         
         function obj = PlotPositions(obj)
@@ -107,7 +120,9 @@ classdef Plotter
                 
             end
             
+            % set axis scale, aspect ratio, and title
             axis(obj.LocationAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
+            obj.LocationAxes.DataAspectRatio = [1,1,1];
             title(obj.LocationAxes, 'Robot Locations');
             
         end

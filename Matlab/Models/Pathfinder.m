@@ -27,3 +27,6 @@ navigator = navigator.UpdateTargets();
 % successfully updated targets
 vision = vision.UpdatePositions();
 %successfully reset positions
+directions = navigator.GetDirections();
+%try to reset directions map
+disp('hello');
