@@ -1,4 +1,4 @@
-classdef Vision
+classdef Vision < handle
     %Vision: 
     %   Object to encapsulate all image processing functionality
     
@@ -293,7 +293,7 @@ classdef Vision
             %   Determine optimal black/white cutoff
             %   threshold to properly deduce locations of robot visual anchors
             
-            threshold = 0.9;
+            threshold = 0.93;
             %TODO: actually implement auto-set algorithm
         end
         

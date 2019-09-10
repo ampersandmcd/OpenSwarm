@@ -1,4 +1,4 @@
-classdef Plotter
+classdef Plotter < handle
     %PLOTTER: Class to facilitate plotting of robot positions and other info
     
     properties

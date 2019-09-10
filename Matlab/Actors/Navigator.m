@@ -1,21 +1,26 @@
-classdef Navigator
+classdef Navigator < handle
     %Navigator:
     %   Controls all navigational functionality, including target setting,
     %   updating, and command creation
     
     properties
+        % object dependencies
         Environment;        % Environment object dependency
+        Plotter;            % Plotter object dependency
+        
+        % dynamic variables
         TargetQueue;        % Cell array of Map<int, Position> where entry i is the target position map of the ith step
         TargetIndex;        % Index of the current target set in TargetQueue
         NumTargets;         % Number of targets in TargetQueue
     end
     
     methods
-        function obj = Navigator(inputEnvironment)
+        function obj = Navigator(inputEnvironment, inputPlotter)
             %Navigator:
             %   Construct a navigator object
             
             obj.Environment = inputEnvironment;
+            obj.Plotter = inputPlotter;
             obj.TargetIndex = 0;                    % not yet set
         end
         
@@ -30,7 +35,10 @@ classdef Navigator
             % if more targets exist in queue, update Environment.Targets
             if obj.TargetIndex <= obj.NumTargets
                 obj.Environment.Targets = obj.TargetQueue{obj.TargetIndex};
-            end            
+            end
+            
+            % NOTE: plot will reflect new targets on next call to
+            % Vision.UpdatePositions()
         end
         
         function directions = GetDirections(obj)

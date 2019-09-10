@@ -1,4 +1,4 @@
-classdef Messenger
+classdef Messenger < handle
     %Messenger: 
     %   Object to encapsulate all messaging functionality between server
     %   (Matlab) and client (Arduino robots)

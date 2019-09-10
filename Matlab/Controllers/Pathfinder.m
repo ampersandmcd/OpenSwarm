@@ -1,7 +1,10 @@
-%PATHFINDER: sends robots on a configurable path in testing field
+%Pathfinder: send robots commands to follow path through testing field
+
+%% SETUP 
+
 
 % initialize environment settings
-environment = Environment();
+environment = Environment(3);
 
 % initialize plot helper object
 plotter = Plotter(environment);
@@ -10,40 +13,48 @@ plotter = Plotter(environment);
 vision = Vision(environment, plotter);
 
 % initialize targets and navigation
-navigator = Navigator(environment);
-navigator = navigator.SetTargetsFromCSV('./test_targets.csv');
+navigator = Navigator(environment, plotter);
+navigator = navigator.SetTargetsFromCSV('../Data/test_path.csv');
 
 % initialize communications
 messenger = Messenger(environment, plotter);
 
 
 
-%%%%%%%%%%%%%% testing %%%%%%%%%%%%%%%%%%%%%
 
-% update positions of robots in field
-vision = vision.UpdatePositions();
+%% ACTION
 
-% check if robots are converged on targets
-flag = navigator.IsConverged();
 
-% get and send directions via UDP
-directions = navigator.GetDirections();
-messenger.SendDirections(directions);
+% initialize positions of robots in field
+vision.UpdatePositions();
 
-% update targets map
-navigator = navigator.UpdateTargets();
+for i = 1:navigator.NumTargets
 
-% update positions map
-vision = vision.UpdatePositions();
+    % until robots are converged on this set of targets, get and send directions
+    while(~navigator.IsConverged())
 
-% get and send new directions via UDP
-directions = navigator.GetDirections();
-messenger.SendDirections(directions);
+        % get and send directions via UDP
+        directions = navigator.GetDirections();
+        messenger.SendDirections(directions);
 
-% test send halt command
+        % wait for directions to execute
+        delay(environment.Delay);
+
+        % update positions
+        vision.UpdatePositions();
+        
+        % update environment iteration tracker
+        environment.Iterate();
+
+    end
+    
+    % move to next round of targets
+    navigator.UpdateTargets();
+
+end
+
+% send halt command
 messenger.SendHalt();
 
 
 
-
-disp('hello');

@@ -11,6 +11,7 @@ classdef Environment < handle
         UDPReception;           % boolean indicating whether UDP messages will be listened for
         ConvergenceThreshold;   % distance (px) to check against when determining if a robot has converged upon its target point
         FullSpeedThreshold      % distance (px) to check against when determining if robot should burst at full speed or reduced speed
+        Delay                   % delay in sec to wait between commands
         
         % dynamic properties
         Iteration;      % counter variable tracking number of commands sent
@@ -20,11 +21,11 @@ classdef Environment < handle
     end
     
     methods
-        function obj = Environment()
+        function obj = Environment(inputNumRobots)
             %Environment:
             %   Construct an environment object
-            
-            % reset workspace and camera & UDP I/O
+                                    
+            % Reset workspace and camera & UDP I/O
             try
                 close all;
                 clc;
@@ -32,16 +33,19 @@ classdef Environment < handle
             catch
             end
             
-            % Manually configure the desired settings below:
-            obj.NumRobots = 3;
+            % Populate NumRobots from constructor input
+            obj.NumRobots = inputNumRobots;
+            
+            % Manually populate other configuration settings below:
             obj.AnchorsPerRobot = 3;
             obj.XAxisSize = 1024;
             obj.YAxisSize = 768;
-            obj.Iteration = 0;      
+            obj.Iteration = 1;      
             obj.UDPTransmission = true;
             obj.UDPReception = false;
             obj.ConvergenceThreshold = 50;
             obj.FullSpeedThreshold = 100;
+            obj.Delay = 2;
         end
                 
         function obj = Iterate(obj)
