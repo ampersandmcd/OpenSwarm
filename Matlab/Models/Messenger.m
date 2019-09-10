@@ -72,6 +72,21 @@ classdef Messenger
             end
         end
         
+        function obj = SendHalt(obj)
+           %SendHalt:
+           %    Send command to halt all robots by sending burst with
+           %    Angle = 0 and Speed = 0 to all robots
+           
+           stopDirections = containers.Map;
+           halt = Burst(0,0);
+           
+           for i = 1:obj.Environment.NumRobots
+               stopDirections(num2str(i)) = halt;
+           end
+           
+           obj.SendDirections(stopDirections);
+        end
+        
         function obj = SendDirections(obj, directions)
             %SendDirections:
             %   Given directions map<str(ID), Burst>, calls
@@ -79,7 +94,7 @@ classdef Messenger
             message = obj.BuildDirectionsMessage(directions);
             obj.SendMessage(message);
         end
-        
+              
         function obj = SendMessage(obj, message)
             %SendMessage:
             %   Broadcast the string parameter 'message' over UDP

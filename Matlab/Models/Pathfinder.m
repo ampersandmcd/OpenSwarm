@@ -40,6 +40,9 @@ vision = vision.UpdatePositions();
 directions = navigator.GetDirections();
 messenger.SendDirections(directions);
 
+% test send halt command
+messenger.SendHalt();
+
 
 
 
