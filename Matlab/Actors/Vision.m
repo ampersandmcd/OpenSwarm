@@ -316,7 +316,7 @@ classdef Vision < handle
             %   Determine optimal black/white cutoff
             %   threshold to properly deduce locations of robot visual anchors
             
-            threshold = 0.92;
+            threshold = 0.95;
             %TODO: actually implement auto-set algorithm
         end
         
