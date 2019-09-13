@@ -24,6 +24,18 @@ classdef Navigator < handle
             obj.TargetIndex = 0;                    % not yet set
         end
         
+        function haltDirections = GetHaltDirections(obj)
+           %GetHaltDirections:
+           %    Return directions map<str(ID), burst> with all bursts
+           %    set to speed=angle=0
+           haltDirections = containers.Map;
+           halt = Burst(0,0);
+           
+           for i = 1:obj.Environment.NumRobots
+               haltDirections(num2str(i)) = halt;
+           end
+        end
+        
         function obj = UpdateTargets(obj)
             %UpdateTargets:
             %   Update targets map<int, Position> of of Environment with

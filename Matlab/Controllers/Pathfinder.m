@@ -28,7 +28,7 @@ messenger = Messenger(environment, plotter);
 % initialize positions of robots in field
 vision.UpdatePositions();
 
-for i = 1:navigator.NumTargets
+for i = 1:0
 
     % until robots are converged on this set of targets, get and send directions
     while(~navigator.IsConverged())
@@ -54,7 +54,7 @@ for i = 1:navigator.NumTargets
 end
 
 % send halt command
-messenger.SendHalt();
-
+halt = navigator.GetHaltDirections();
+messenger.SendDirections(halt);
 
 
