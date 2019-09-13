@@ -24,6 +24,7 @@ classdef Vision < handle
             obj.Environment = inputEnvironment;
             obj.Plotter = inputPlotter;
             obj = obj.StartCamera();
+            obj = obj.PurgeCamera();
         end
         
         function obj = StartCamera(obj)
@@ -42,6 +43,13 @@ classdef Vision < handle
             
             % find and set AnchorSize
             obj.AnchorSize = obj.GetAnchorSize();
+        end
+        
+        function obj = PurgeCamera(obj)
+           %PurgeCamera: Take series of images to ensure autofocus is 
+           %    functioning properly
+           obj.GetBWImage();
+           obj.GetBWImage();
         end
         
         function obj = GetColorImage(obj)
@@ -293,7 +301,7 @@ classdef Vision < handle
             %   Determine optimal black/white cutoff
             %   threshold to properly deduce locations of robot visual anchors
             
-            threshold = 0.93;
+            threshold = 0.85;
             %TODO: actually implement auto-set algorithm
         end
         

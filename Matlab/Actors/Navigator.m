@@ -36,6 +36,22 @@ classdef Navigator < handle
            end
         end
         
+        function homeTargets = GetHomeTargets(obj)
+           %GetHomeDirections:
+           %    Set target of robot i to (i * XAxisSize / (NumRobots + 1), YAxisSize / 5) 
+           %    and return map<str(int), position> of such targets
+           
+           homeTargets = containers.Map;
+           
+           for i = 1:obj.Environment.NumRobots
+               homeX = (i * obj.Environment.XAxisSize) / (obj.Environment.NumRobots + 1);
+               homeY = obj.Environment.YAxisSize / 5;
+               homePosition = Position.TargetPosition(homeX, homeY);
+               homeTargets(num2str(i)) = homePosition;
+           end
+           
+        end
+        
         function obj = UpdateTargets(obj)
             %UpdateTargets:
             %   Update targets map<int, Position> of of Environment with
@@ -88,9 +104,9 @@ classdef Navigator < handle
                if distance < obj.Environment.ConvergenceThreshold
                    speed = 0;
                elseif distance > obj.Environment.FullSpeedThreshold
-                   speed = 100;
+                   speed = 255;
                else
-                   speed = 100*(distance - obj.Environment.ConvergenceThreshold)/(obj.Environment.FullSpeedThreshold - obj.Environment.ConvergenceThreshold);
+                   speed = 100*(distance - obj.Environment.ConvergenceThreshold)/(obj.Environment.FullSpeedThreshold - obj.Environment.ConvergenceThreshold) + 100;
                end
                
                % construct and save Burst object in directions map
@@ -170,6 +186,14 @@ classdef Navigator < handle
                 % add current targetMap target set to queue
                 targetIndex = (col + 1) / 2; % deal with double-column-spacing of columns
                 targetQueue{targetIndex} = targetMap;
+            end
+            
+            % if Environment.GoHome is true, append home targets for robots
+            % to end of targetQueue
+            if obj.Environment.GoHome
+                homeIdx = numel(targetQueue) + 1;
+                homeTargets = obj.GetHomeTargets(); 
+                targetQueue{homeIdx} = homeTargets;
             end
             
             % set finished targetQueue

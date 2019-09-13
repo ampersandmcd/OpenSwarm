@@ -12,6 +12,7 @@ classdef Environment < handle
         ConvergenceThreshold;   % distance (px) to check against when determining if a robot has converged upon its target point
         FullSpeedThreshold      % distance (px) to check against when determining if robot should burst at full speed or reduced speed
         Delay                   % delay in sec to wait between commands
+        GoHome                  % boolean indicating whether robots should return "home" at end of target map
         
         % dynamic properties
         Iteration;      % counter variable tracking number of commands sent
@@ -44,8 +45,9 @@ classdef Environment < handle
             obj.UDPTransmission = true;
             obj.UDPReception = false;
             obj.ConvergenceThreshold = 50;
-            obj.FullSpeedThreshold = 100;
-            obj.Delay = 2;
+            obj.FullSpeedThreshold = 300;
+            obj.Delay = 4;
+            obj.GoHome = true;
         end
                 
         function obj = Iterate(obj)

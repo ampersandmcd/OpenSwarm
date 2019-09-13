@@ -9,7 +9,7 @@ environment = Environment(3);
 % initialize plot helper object
 plotter = Plotter(environment);
 
-% initialize webcam tracking
+% initialize webcam tracking and purge autofocus
 vision = Vision(environment, plotter);
 
 % initialize targets and navigation
@@ -28,7 +28,7 @@ messenger = Messenger(environment, plotter);
 % initialize positions of robots in field
 vision.UpdatePositions();
 
-for i = 1:0
+for i = 1:navigator.NumTargets
 
     % until robots are converged on this set of targets, get and send directions
     while(~navigator.IsConverged())
