@@ -14,7 +14,7 @@ vision = Vision(environment, plotter);
 
 % initialize targets and navigation
 navigator = Navigator(environment, plotter);
-navigator = navigator.SetTargetsFromCSV('../Data/test_path.csv');
+navigator = navigator.SetTargetsFromCSV('../Data/circle.csv');
 
 % initialize communications
 messenger = Messenger(environment, plotter);
