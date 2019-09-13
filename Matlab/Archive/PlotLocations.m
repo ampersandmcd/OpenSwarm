@@ -11,7 +11,7 @@ function f = PlotLocations(positions, goto_matrix, x_axis_sz, y_axis_sz, ax)
     quivers = findobj('type', 'quiver');
     delete(quivers);
     scatters = findobj('type', 'scatter');
-    delete(scatters(1:2)); % delete only most recent two scatters; keep originals
+    delete(scatters); % delete only most recent two scatters; keep originals
     texts = findobj('type', 'text');
     delete(texts);
     
@@ -32,6 +32,7 @@ function f = PlotLocations(positions, goto_matrix, x_axis_sz, y_axis_sz, ax)
    
     xlim([0, x_axis_sz]);
     ylim([0, y_axis_sz]);
+    grid on;
     % Done plotting
     hold off;
 end

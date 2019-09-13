@@ -9,10 +9,11 @@ function positions = Locate(camera, x_axis_sz, y_axis_sz, counter, previous_posi
     threshold = 0.7;
     im_grey = rgb2gray(cropped);
     im_bw = imbinarize(im_grey, threshold);
+    
     % remove blobs of extraneous pixels in bw image
-    min_num_pixels = 5;
+    min_num_pixels = 10;
     im_bw = bwareaopen(im_bw, min_num_pixels);
-
+    
     % imshow(panorama);
     % figure, imshow(pano_crop);
     % figure, imshow(pano_bw);
@@ -23,7 +24,7 @@ function positions = Locate(camera, x_axis_sz, y_axis_sz, counter, previous_posi
         % this is a problem; we need to bail & hope for better luck on the
         % next loop
         positions = previous_positions;
-        disp('WARNING: mismatched blob count');
+        disp(sprintf('WARNING: mismatched blob count: expected %d blobs, found %d', num_robots*3, num_blobs));
         return;
     end
     centers_struct = regionprops(im_blobs, 'Centroid');
@@ -177,6 +178,10 @@ function positions = Locate(camera, x_axis_sz, y_axis_sz, counter, previous_posi
         end
     end
 end
+
+% returns [num_robots x 3] "positions" array with each row corresponding to
+% the robot with ID = row_index, with column 1 giving x-coords,
+% column 2 giving y-coords, and column 3 giving heading angle in degrees (0-360)
 
                 
                 

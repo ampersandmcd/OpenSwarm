@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "istream": "cpp",
+        "*.rh": "cpp",
+        "memory": "cpp"
+    },
+    "C_Cpp.intelliSenseCacheSize": 0,
+    "editor.detectIndentation": false,
+    "editor.formatOnPaste": true,
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true,
+}
