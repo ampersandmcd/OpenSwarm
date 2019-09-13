@@ -13,6 +13,7 @@ classdef Vision < handle
         % dynamic properties
         ColorImage;     % stores latest Color image
         BWImage;        % stores latest BW image
+        Updated;        % indicates whether positions were properly updated on most recent UpdatePositions() call
     
     end
     
@@ -23,6 +24,7 @@ classdef Vision < handle
             
             obj.Environment = inputEnvironment;
             obj.Plotter = inputPlotter;
+            obj.Updated = false;
             obj = obj.StartCamera();
             obj = obj.PurgeCamera();
         end
@@ -86,6 +88,13 @@ classdef Vision < handle
             % get anchor points in the field as cell array
             anchorPoints = obj.GetAnchorPoints();
             
+            % if incorrect number of anchor points are found, try again:
+            % set Updated to false and return without updating current positions
+            if numel(anchorPoints) ~= (obj.Environment.NumRobots * obj.Environment.AnchorsPerRobot)
+                obj.Updated = false;
+                return;
+            end
+            
             % get n-tuples grouping anchor points (where n=AnchorsPerRobot)
             anchorGroups = obj.GetAnchorGroups(anchorPoints);
             
@@ -103,6 +112,7 @@ classdef Vision < handle
             
             % update Environment positions map
             obj.Environment.Positions = map;
+            obj.Updated = true;
 
             % update plotted environment positions
             obj.Plotter.PlotPositions();
@@ -123,6 +133,8 @@ classdef Vision < handle
             for i = 1:obj.Environment.NumRobots
                 map(num2str(i)) = positions{i};
             end
+            
+            Utils.Verify(map.Count == obj.Environment.NumRobots, Utils.InvalidRobotCountMessage);
         end
         
         function map = MatchPositions(obj, positions)
@@ -151,6 +163,9 @@ classdef Vision < handle
                 % this robot's old position
                 map(num2str(nearestNeighbor)) = newPosition;
             end
+            
+            Utils.Verify(map.Count == obj.Environment.NumRobots, Utils.InvalidRobotCountMessage);
+
         end
         
         function positions = GetPositions(obj, anchorPoints, anchorGroups)
@@ -301,7 +316,7 @@ classdef Vision < handle
             %   Determine optimal black/white cutoff
             %   threshold to properly deduce locations of robot visual anchors
             
-            threshold = 0.85;
+            threshold = 0.92;
             %TODO: actually implement auto-set algorithm
         end
         

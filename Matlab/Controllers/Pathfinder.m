@@ -33,13 +33,16 @@ for i = 1:navigator.NumTargets
     % until robots are converged on this set of targets, get and send directions
     while(~navigator.IsConverged())
 
-        % get and send directions via UDP
-        directions = navigator.GetDirections();
-        messenger.SendDirections(directions);
+        % if positions up to date, get and send directions via UDP
+        if vision.Updated
+            
+            directions = navigator.GetDirections();
+            messenger.SendDirections(directions);
 
-        % wait for directions to execute
-        pause(environment.Delay);
-
+            % wait for directions to execute
+            pause(environment.Delay);
+        end
+        
         % update positions
         vision.UpdatePositions();
         
