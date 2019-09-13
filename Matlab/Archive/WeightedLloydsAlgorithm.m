@@ -98,13 +98,8 @@ for i = 1:size(cartofield_x)
     xi = xfield(i);
     yi = yfield(i);
     xshift = (-1*integral(@(x) f(x, yfield(i)), 0, xfield(i)) + integral(@(x) f(x, yfield(i)), xfield(i), x_axis_sz));
-    cartofield_x(i) = xfield(i)-regularizer*xshift;
-end
-for i = 1:size(cartofield_y)
-    % integrate wrt y to get yshift based on density
-    xi = xfield(i);
-    yi = yfield(i);
     yshift = (-1*integral(@(y) f(xfield(i), y), 0, yfield(i)) + integral(@(y) f(xfield(i), y), yfield(i), y_axis_sz));
+    cartofield_x(i) = xfield(i)-regularizer*xshift;
     cartofield_y(i) = yfield(i)-regularizer*yshift;
 end
 cartofield = [cartofield_x, cartofield_y];
@@ -248,7 +243,7 @@ for i=1:size(Px, 1)
 end
 
 % compare to normal voronoi for unweighted shape
-[box_Px, box_Py] = LloydsAlgorithm(old_Px, old_Py, box, 60, false); 
+[box_Px, box_Py] = LloydsAlgorithm(old_Px, old_Py, box, numIterations, false); 
 
 % visualize weighted centroids of non-uniform density space vs. centroids of
 % uniform density space

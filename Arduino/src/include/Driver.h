@@ -61,7 +61,7 @@ public:
     }
 
     // Purpose:     Accelerates robot into forward motion
-    // Params:      (int& speed) Speed as integer percentage between 0-100 of full power
+    // Params:      (int& speed) Speed as integer between 0-255
     // Returns:     void
     void Startup(int &speed)
     {
@@ -74,7 +74,7 @@ public:
     }
 
     // Purpose:     Decelerates robot from forward motion
-    // Params:      (int& speed) Starting speed as integer percentage between 0-100 of full power
+    // Params:      (int& speed) Starting speed as integer between 0-255
     // Returns:     void
     void Slowdown(int &speed)
     {
@@ -88,7 +88,7 @@ public:
     }
 
     // Purpose:     Bursts robot forward; called repeatedly along with Turn to converge on target point
-    // Params:      (int& velocity) Speed as int percentage between 0-100 of full power
+    // Params:      (int& velocity) Speed as int between 0-255
     // Returns:     void
     void Burst(int &velocity)
     {
@@ -99,7 +99,7 @@ public:
 
     // Purpose:     Turns and Bursts robot towards target point
     // Params:      (int &angle)      Angle in degrees as int; CCW is positive, CW is negative
-    //              (int &velocity)   Speed as int percentage between 0-100 of full power
+    //              (int &velocity)   Speed as int between 0-255
     // Returns:     void
     void Drive(int &angle, int &velocity)
     {
