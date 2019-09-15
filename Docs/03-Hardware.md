@@ -77,9 +77,6 @@ Webcams mounted above the testbed used to develop OpenSwarm; note that only one 
 
 ![](Images/TestbedWebcam.JPG)
 
-<p style="text-align:left;">
-    <a href=02-Getting-Started.md>Previous: Getting Started</a>
-    <span style="float:right;">
-       <a href=04-Software.md>Next: Software</a>
-    </span>
-</p>
+<a href=02-Getting-Started.md>Previous: Getting Started</a>
+
+<a href=04-Software.md>Next: Software</a>
