@@ -71,8 +71,8 @@ A conceptual diagram of the testbed setup:
 
 The testbed used to develop OpenSwarm (approximately 10ft x 10ft). Note that the dark flooring enables visual tracking of the white anchor points on each robot (router not pictured):
 
-![](Images/TestbedGround.jpg)
+![](Images/TestbedGround.JPG)
 
 The webcams mounted above the testbed used to develop OpenSwarm; note that only one is necessary for visual tracking in Matlab (the second is for simultaneous video capture when running experiments):
 
-![](Images/TestbedWebcam.jpg)
+![](Images/TestbedWebcam.JPG)
