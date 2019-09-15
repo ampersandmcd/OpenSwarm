@@ -1,0 +1,3 @@
+# OpenSwarm Documentation
+
+## Getting Started
