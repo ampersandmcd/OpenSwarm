@@ -4,7 +4,7 @@ OpenSwarm is an open-source library produced by the [D-CYPHER Lab](https://www.e
 
 The library is implemented in Matlab and Arduino, and is designed to enable a central server to communicate with and control a swarm of Arduino-powered robots using commands sent via UDP broadcast.
 
-For more information, browse the [documentation](Docs\00-Table-of-Contents.md) here!
+For more information, browse the [documentation](Docs/00-Table-of-Contents.md) here!
 
 Additions will be made to the codebase and documentation over the course of Fall 2019, so stay tuned for more.
 
