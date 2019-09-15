@@ -14,7 +14,7 @@ WiFi connectivity is provided by the [ESP8266 board](https://en.wikipedia.org/wi
 
 ### Testbed
 
-To keep with the theme of simplicity, flexibility, and affordability, the testbed consists of only three parts: open floor space, an overhead webcam for visual tracking and robot localization, and a router to enable UDP communication between a central server and client robots. These three elements are all that's needed to turn a classroom, basement, or bedroom into one's own research lab.
+To keep with the theme of simplicity, flexibility, and affordability, the testbed consists of only three parts: open floor space (25-100 ft<sup>2</sup>), an overhead webcam for visual tracking and robot localization, and a router to enable UDP communication between a central server and client robots. These three elements are all that's needed to turn a classroom, basement, or bedroom into one's own research lab.
 
 ## Architecture
 
@@ -44,16 +44,33 @@ Included below is a bill of materials necessary for each robot's construction, f
 
 The schematic below (from [this Fritzing file](../Hardware/Fritzing/RobotSchematic.fzz)) diagrams the architecture of each OpenSwarm robot:
 
-![](../Hardware/Images/RobotSchematic.png)
+![](Images/RobotSchematic.png)
 
 An assembled robot with breadboards, motors, and controllers mounted to an [Adafruit 3-Layer Chassis](https://www.adafruit.com/product/3244?gclid=CjwKCAjwwvfrBRBIEiwA2nFiPdCmxLozNnYqI7awL7QyuuEY0aN3Qwq4G5LhX_AHaWjidQCgVE5sHBoC9r8QAvD_BwE):
 
-![](../Hardware/Images/ISO-Robot-Uncovered.JPG)
+![](Images/ISO-Robot-Uncovered.JPG)
 
 An assembled robot complete with [3D-printed casing](../Hardware/3DModels/RobotCover.stl) and visual tracking anchors:
 
-![](../Hardware/Images/ISO-Robot-Covered.JPG)
+![](Images/ISO-Robot-Covered.JPG)
 
 ### Testbed
 
-Included below is a bill of materials necessary for the testbed's construction, followed by an architectural diagram of the testbed and images of the one used when developing OpenSwarm.
+Included below is a bill of materials necessary for the testbed's construction, followed by a conceptual diagram of the testbed and images of the one used when developing OpenSwarm.
+
+| Item                                                                                                                                                                                                                                                                                                                                                                                                    | Quantity | Price |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ----- |
+| [Generic Webcam (resolution ≥ 1024x768)](https://www.amazon.com/LARMTEK-Webcam-Computer-Conference-Calling/dp/B07P84DN2K/ref=sxin_2_ac_d_pm?ac_md=2-0-VW5kZXIgJDUw-ac_d_pm&keywords=webcam+1080p&pd_rd_i=B07P84DN2K&pd_rd_r=7355076c-f61d-4db2-a713-7bf372be113c&pd_rd_w=3ffow&pd_rd_wg=xa1kL&pf_rd_p=eeff02d5-070a-45ea-a79e-d591974b877e&pf_rd_r=BVP14A6HNQECBXCC8MRB&psc=1&qid=1568577545&s=gateway) | 1        | \$30  |
+| [Generic Router](https://www.amazon.com/TP-Link-N450-Wi-Fi-Router-TL-WR940N/dp/B001FWYGJS/ref=sr_1_5?keywords=router&qid=1568577613&s=gateway&sr=8-5&th=1)                                                                                                                                                                                                                                              | 1        | \$20  |
+| Open Floor Space (25-100 ft<sup>2</sup>) with Overhead Mount for Webcam                                                                                                                                                                                                                                                                                                                                 | 1        | -     |
+| **Total**                                                                                                                                                                                                                                                                                                                                                                                               |          | \$50  |
+
+A conceptual diagram of the testbed setup:
+
+The testbed used to develop OpenSwarm (approximately 10ft x 10ft). Note that the dark flooring enables visual tracking of the white anchor points on each robot (router not pictured):
+
+![](Images/TestbedGround.jpg)
+
+The webcams mounted above the testbed used to develop OpenSwarm; note that only one is necessary for visual tracking in Matlab (the second is for simultaneous video capture when running experiments):
+
+![](Images/TestbedWebcam.jpg)
