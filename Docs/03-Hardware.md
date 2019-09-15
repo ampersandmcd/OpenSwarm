@@ -67,6 +67,8 @@ Included below is a bill of materials necessary for the testbed's construction, 
 
 A conceptual diagram of the testbed setup:
 
+![](Images/TestbedSchematic.png)
+
 The testbed used to develop OpenSwarm (approximately 10ft x 10ft). Note that the dark flooring enables visual tracking of the white anchor points on each robot (router not pictured):
 
 ![](Images/TestbedGround.jpg)
