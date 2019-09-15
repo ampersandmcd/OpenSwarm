@@ -2,7 +2,7 @@
 
 OpenSwarm is an open-source library produced by the [D-CYPHER Lab](https://www.egr.msu.edu/d-cypher/) at Michigan State University to facilitate research in swarm robotics and human-robot interaction.
 
-The library is implemented in Matlab and Arduino, and is designed to enable a central server to communicate with and control a swarm of Arduino-powered robots using commands sent via UDP broadcast.
+The library is implemented in Matlab and Arduino, and is designed to enable a central server to communicate with a swarm of bi-wheeled, Arduino-controlled robots via UDP broadcast.
 
 For more information, browse the [documentation](Docs/00-Table-of-Contents.md) here!
 
