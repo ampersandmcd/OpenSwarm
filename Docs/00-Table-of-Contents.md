@@ -3,15 +3,14 @@
 ## Table of Contents
 
 1. [Introduction](01-Introduction.md)
-   - Mission
-   - Project Overview
-   - Use Cases
-   - What's Next
+   - What is Swarm Robotics?
+   - What is OpenSwarm?
+   - What's Next?
 1. [Getting Started](02-Getting-Started.md)
    - Bill of Materials
    - Hardware Setup
    - Software Setup
-   - End-to-End Functionality
+   - Full-stack Functionality
 1. [Hardware](03-Hardware.md)
    - Design Considerations
      - Robot
