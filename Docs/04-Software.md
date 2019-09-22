@@ -74,6 +74,16 @@ The official Arduino IDE can be downloaded for free under a Creative Commons Att
 
 ### Server-Side
 
+All server-side control programs can be found in the [Matlab/Controllers](../Matlab/Controllers/) folder, and rely on helper classes and input data in the 
+- [Matlab/Actors](../Matlab/Actors/)
+- [Matlab/Models](../Matlab/Models/)
+- [Matlab/Utils](../Matlab/Utils/) 
+- [Matlab/Data](../Matlab/Data/)
+
+folders to fulfill the responsibilities defined in the Design section above. 
+
+A more complete breakdown and description of each of these folders is provided below.
+
 ### Client-Side
 
 [`Pathfinder.ino`](../Arduino/src/Pathfinder.ino) serves as the main client-side control program, and relies on the helper classes
