@@ -38,7 +38,7 @@ Hence, OpenSwarm provides a robust, modular, and configureable interface for man
 
 The software follows a client-server architecture model, where each robot in the testbed acts as a client (powered by Arduino) and one central computer with an overhead webcam view of the testbed acts as a server (powered by Matlab). Each client robot listens for commands from the server, and replies with sensor readouts upon reception of a command before executing the command.
 
-### Server-Side Design
+### Server
 
 The OpenSwarm server is responsible for 
 
@@ -55,7 +55,7 @@ Implemented in Matlab, it makes use of the language's dynamically-typed, debuggi
 
 Matlab can be downloaded for free with an academic license [here](https://www.mathworks.com/products/matlab.html); alternatively, GNU Octave can be downloaded under a GNU General Public License for free [here.](https://www.gnu.org/software/octave/)
 
-### Client-Side Design
+### Client
 
 The OpenSwarm clients (robots) are responsible for
 
@@ -72,7 +72,7 @@ The official Arduino IDE can be downloaded for free under a Creative Commons Att
 
 ## Architecture
 
-### Server-Side
+### Server
 
 All server-side code can be found in the [Matlab](../Matlab/) folder.
 
@@ -136,7 +136,7 @@ Contains static data used as input in control programs.
 
 
 
-### Client-Side
+### Client
 
 All client-side code can be found in the [Arduino](../Arduino/) folder.
 

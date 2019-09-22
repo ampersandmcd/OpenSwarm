@@ -6,19 +6,19 @@ When designing the physical side of OpenSwarm, simplicity, flexibility, and affo
 
 As such, hardware design choices were kept generic and open-source; the goal was to keep attention on _what could be done_ with the system, rather than _on the system itself._ The result: an open-source, accessible, portable and hardware-agnostic swarm robotics control framework for the advancement of algorithmic research in distributed systems, multi-agent systems and human-robot interaction.
 
-### Robot Design
+### Robot
 
 A bi-wheeled, [Arduino](https://www.arduino.cc/)-controlled robot design was chosen for simplicity, flexibility, and affordability's sake; at under $70 per robot, a testbed and swarm of 5 robots can be constructed for under $500. Extensive documentation on the open-source Arduino project is available online along with countless open-source libraries, making the platform ideal for low-cost, high-speed development. Standardized 5V logic and jumper-cable-friendly I/O further solidifes Arduino as the gold-standard of research-oriented development.
 
 WiFi connectivity is provided by the [ESP8266 board](https://en.wikipedia.org/wiki/ESP8266), and mobility is provided by two generic 5v DC motors under control of an [Adafruit TB6612](https://learn.adafruit.com/adafruit-tb6612-h-bridge-dc-stepper-motor-driver-breakout/overview) motor driver. Both components were again chosen on the criteria of simplicity, flexibility, and affordability.
 
-### Testbed Design
+### Testbed
 
 To keep with the theme of simplicity, flexibility, and affordability, the testbed consists of only three parts: open floor space (25-100 ft<sup>2</sup>), an overhead webcam for visual tracking and robot localization, and a router to enable UDP communication between a central server and client robots. These three elements are all that's needed to turn a classroom, basement, or bedroom into one's own research lab.
 
 ## Architecture
 
-### Robot Architecture
+### Robot
 
 Included below is a bill of materials necessary for each robot's construction, followed by a wiring diagram and images of a finished robot. Note that the photoresistor is optional, and could be replaced by any sensor relevant to the nature of an experiment for data feedback to the central server.
 
@@ -54,7 +54,7 @@ An assembled robot complete with [3D-printed casing](../Hardware/3DModels/RobotC
 
 ![](Images/ISO-Robot-Covered.JPG)
 
-### Testbed Architecture
+### Testbed
 
 Included below is a bill of materials necessary for the testbed's construction, followed by a conceptual diagram of the testbed and images of the one used when developing OpenSwarm.
 
