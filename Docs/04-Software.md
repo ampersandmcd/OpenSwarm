@@ -76,6 +76,30 @@ The official Arduino IDE can be downloaded for free under a Creative Commons Att
 
 ### Client-Side
 
+[Pathfinder.ino](../Arduino/src/Pathfinder.ino) serves as the main client-side control program, and relies on the helper classes
+
+- [Configuration.h](../Arduino/src/include/Configuration.h)
+- [Driver.h](../Arduino/src/include/Driver.h)
+- [Parser.h](../Arduino/src/include/Parser.h)
+- [Utilities.h](../Arduino/src/include/Utilities.h)
+
+defined in the [Arduino/src/include](../Arduino/src/include/) folder to fulfill the responsibilities defined in the Design section above.
+
+It leverages the
+
+- [avr](../Arduino/Libraries/avr/)
+- [MMEmotor](../Arduino/Libraries/MMEmotor/)
+- [util](../Arduino/Libraries/util/)
+- [WiFiEsp-master](../Arduino/Libraries/WiFiEsp-master)
+
+libraries included in the [Arduino/Libraries](../Arduino/Libraries/) folder to simplify tasks involving communications, networking, and motor control.
+
+A more complete description of the purpose of each class/library is included below:
+
+| Class/Library | Purpose |
+|-|-|
+| Pathfinder.ino | Control robot trajectory by receiving, parsing, and executing commands broadcast over UDP by server. Read and transmit sensor data back to server via UDP broadcast. |
+
 <a href=03-Hardware.md>Previous: Hardware</a>
 
 <a href=05-Demos.md>Next: Demos</a>
