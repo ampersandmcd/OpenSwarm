@@ -86,7 +86,7 @@ From an algorithmic interfacing perspective, then, OpenSwarm can be conceptualiz
 
 which enables the control of a robotic swarm in discrete-time iterations.
 
-Robot and testbed schematics are further detailed in [Section 3](03-Hardware.md), while software design and functionality is detailed in [Section 4](04-Software.md).
+Robot and testbed schematics are further detailed [here](03-Hardware.md), while software design and functionality is detailed [here](04-Software.md).
 
 ### What's Next?
 
