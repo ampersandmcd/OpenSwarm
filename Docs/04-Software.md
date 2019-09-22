@@ -76,12 +76,12 @@ The official Arduino IDE can be downloaded for free under a Creative Commons Att
 
 ### Client-Side
 
-[Pathfinder.ino](../Arduino/src/Pathfinder.ino) serves as the main client-side control program, and relies on the helper classes
+[`Pathfinder.ino`](../Arduino/src/Pathfinder.ino) serves as the main client-side control program, and relies on the helper classes
 
-- [Configuration.h](../Arduino/src/include/Configuration.h)
-- [Driver.h](../Arduino/src/include/Driver.h)
-- [Parser.h](../Arduino/src/include/Parser.h)
-- [Utilities.h](../Arduino/src/include/Utilities.h)
+- [`Configuration.h`](../Arduino/src/include/Configuration.h)
+- [`Driver.h`](../Arduino/src/include/Driver.h)
+- [`Parser.h`](../Arduino/src/include/Parser.h)
+- [`Utilities.h`](../Arduino/src/include/Utilities.h)
 
 defined in the [Arduino/src/include](../Arduino/src/include/) folder to fulfill the responsibilities defined in the Design section above.
 
@@ -98,7 +98,11 @@ A more complete description of the purpose of each class/library is included bel
 
 | Class/Library | Purpose |
 |-|-|
-| Pathfinder.ino | Control robot trajectory by receiving, parsing, and executing commands broadcast over UDP by server. Read and transmit sensor data back to server via UDP broadcast. |
+| [`Pathfinder.ino`](../Arduino/src/Pathfinder.ino) | Control robot trajectory by receiving, parsing, and executing commands broadcast over UDP by server. Read and transmit sensor data back to server via UDP broadcast. |
+| [`Configuration.h`](../Arduino/src/include/Configuration.h) | Store global constants used in [`Pathfinder.ino`](../Arduino/src/Pathfinder.ino) and other helper classes. |
+| [`Driver.h`](../Arduino/src/include/Driver.h) | Encapsulate specifics of motor control and support simple calls to move robot. |
+| [`Parser.h`](../Arduino/src/include/Parser.h) | Encapsulate UDP message parsing and support simple interfacing with server. |
+| [`Utilities.h`](../Arduino/src/include/Utilities.h) | Encapsulate hardware interfacing and provide auxiliary helper methods. 
 
 <a href=03-Hardware.md>Previous: Hardware</a>
 
