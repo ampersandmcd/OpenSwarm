@@ -74,26 +74,80 @@ The official Arduino IDE can be downloaded for free under a Creative Commons Att
 
 ### Server-Side
 
-All server-side control programs can be found in the [Matlab/Controllers](../Matlab/Controllers/) folder, and rely on helper classes and input data in the 
-- [Matlab/Actors](../Matlab/Actors/)
-- [Matlab/Models](../Matlab/Models/)
-- [Matlab/Utils](../Matlab/Utils/) 
-- [Matlab/Data](../Matlab/Data/)
+All server-side code can be found in the [Matlab](../Matlab/) folder.
 
-folders to fulfill the responsibilities defined in the Design section above. 
+Within the [Matlab](../Matlab/) folder, control programs can be found in the [Controllers](../Matlab/Controllers/) subfolder, and rely on helper classes and input data in the 
 
-A more complete breakdown and description of each of these folders is provided below.
+- [Actors](../Matlab/Actors/)
+- [Models](../Matlab/Models/)
+- [Utils](../Matlab/Utils/) 
+- [Data](../Matlab/Data/)
+
+subfolders to fulfill the responsibilities defined in the Design section above. 
+
+A more complete breakdown and description of each of these folders and their contents is provided below.
+
+#### [Controllers](../Matlab/Controllers/)
+
+Contains main high-level control programs.
+
+| Class | Purpose |
+|-|-|
+| [`Pathfinder.m`](../Matlab/Controllers/Pathfinder.m) | Read sequence of _m_ target waypoints for each of _n_ robots from CSV file. For each set of _n_ out of _m*n_ waypoints, iteratively locate the _n_ robots, then generate and send directions until all _n_ robots converge on the current set of _n_ waypoints. Then, advance to the next set of _n_ waypoints and repeat until all robots converge. Continue until all _m*n_ waypoints are exhausted. |
+
+#### [Actors](../Matlab/Actors/)
+
+Contains essential (active) helper classes.
+
+| Class | Purpose |
+|-|-|
+| [`Messenger.m`](../Matlab/Actors/Messenger.m) | abcd |
+| [`Navigator.m`](../Matlab/Actors/Navigator.m) | abcd |
+| [`Plotter.m`](../Matlab/Actors/Plotter.m) | abcd |
+| [`Vision.m`](../Matlab/Actors/Vision.m) | abcd |
+
+#### [Models](../Matlab/Models/)
+
+Contains classes for data storage.
+
+| Class | Purpose |
+|-|-|
+| [`Burst.m`](../Matlab/Models/Burst.m) | abcd |
+| [`Environment.m`](../Matlab/Models/Environment.m) | abcd |
+| [`Point.m`](../Matlab/Models/Point.m) | abcd |
+| [`Position.m`](../Matlab/Models/Position.m) | abcd |
+
+
+#### [Utils](../Matlab/Utils/)
+
+Contains auxiliary helper functionalities.
+
+| Class | Purpose |
+|-|-|
+| [`Utils.m`](../Matlab/Utils/Utils.m) | abcd |
+
+#### [Data](../Matlab/Data/)
+
+Contains static data used as input in control programs.
+
+| Class | Purpose |
+|-|-|
+| [`circle.csv`](../Matlab/Data/circle.csv) | Demo input data for [`Pathfinder.m`](../Matlab/Controllers/Pathfinder.m) which directs three robots in a circle around the testbed. |
+
+
 
 ### Client-Side
 
-[`Pathfinder.ino`](../Arduino/src/Pathfinder.ino) serves as the main client-side control program, and relies on the helper classes
+All client-side code can be found in the [Arduino](../Arduino/) folder.
+
+Within the [Arduino](../Arduino/) folder, [`Pathfinder.ino`](../Arduino/src/Pathfinder.ino) serves as the main client-side control program, and relies on the helper classes
 
 - [`Configuration.h`](../Arduino/src/include/Configuration.h)
 - [`Driver.h`](../Arduino/src/include/Driver.h)
 - [`Parser.h`](../Arduino/src/include/Parser.h)
 - [`Utilities.h`](../Arduino/src/include/Utilities.h)
 
-defined in the [Arduino/src/include](../Arduino/src/include/) folder to fulfill the responsibilities defined in the Design section above.
+defined in the [Arduino/src/include](../Arduino/src/include/) subfolder to fulfill the responsibilities defined in the Design section above.
 
 It leverages the
 
@@ -102,11 +156,11 @@ It leverages the
 - [util](../Arduino/Libraries/util/)
 - [WiFiEsp-master](../Arduino/Libraries/WiFiEsp-master)
 
-libraries included in the [Arduino/Libraries](../Arduino/Libraries/) folder to simplify tasks involving communications, networking, and motor control.
+libraries included in the [Arduino/Libraries](../Arduino/Libraries/) subfolder to simplify tasks involving communications, networking, and motor control.
 
-A more complete description of the purpose of each class/library is included below:
+A more complete description of the purpose of each class is included below:
 
-| Class/Library | Purpose |
+| Class | Purpose |
 |-|-|
 | [`Pathfinder.ino`](../Arduino/src/Pathfinder.ino) | Control robot trajectory by receiving, parsing, and executing commands broadcast over UDP by server. Read and transmit sensor data back to server via UDP broadcast. |
 | [`Configuration.h`](../Arduino/src/include/Configuration.h) | Store global constants used in [`Pathfinder.ino`](../Arduino/src/Pathfinder.ino) and other helper classes. |
