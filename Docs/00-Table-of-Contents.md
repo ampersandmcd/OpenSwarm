@@ -1,4 +1,4 @@
-# OpenSwarm Documentation
+# OpenSwarm Documentation: Table of Contents
 
 ## Table of Contents
 

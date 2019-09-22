@@ -1,6 +1,4 @@
-# OpenSwarm Documentation
-
-## Getting Started
+# OpenSwarm Documentation: Getting Started
 
 <a href=01-Introduction.md>Previous: Introduction</a>
 

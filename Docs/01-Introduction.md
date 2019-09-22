@@ -1,10 +1,8 @@
-# OpenSwarm Documentation
-
-## Introduction
+# OpenSwarm Documentation: Introduction
 
 OpenSwarm is an open-source library written by Andrew McDonald at the [D-CYPHER Lab](https://www.egr.msu.edu/d-cypher/) at Michigan State University to facilitate research in swarm robotics and human-robot interaction. By providing full-stack control software and models for robot and testbed construction, the repository aims to enable the curious individual to discover, prototype, and perfect swarm control algorithms in their lab, classroom, or home for under \$70 per robot.
 
-### What is Swarm Robotics?
+## What is Swarm Robotics?
 
 According to [Wikipedia](https://en.wikipedia.org/wiki/Swarm_robotics),
 
@@ -48,7 +46,7 @@ The goal of OpenSwarm is to advance the discovery and development of swarm contr
 
 Swarm control algorithms cannot be fully validated by simulation alone; it is essential that metaphorical rubber meets the road, that abstraction meet concretion. By putting swarm theory into practice, OpenSwarm closes the gap in the loop of swarm innovation.
 
-### What is OpenSwarm?
+## What is OpenSwarm?
 
 OpenSwarm consists of four primary components:
 
@@ -88,7 +86,7 @@ which enables the control of a robotic swarm in discrete-time iterations.
 
 Robot and testbed schematics are further detailed [here](03-Hardware.md), while software design and functionality is detailed [here](04-Software.md).
 
-### What's Next?
+## What's Next?
 
 If you're an aspiring swarm researcher, check out the rest of the documentation, clone the repository, and build yourself a swarm research platform! If you're new to the world of swarm robotics, do the same!
 
