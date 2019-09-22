@@ -101,10 +101,10 @@ Contains essential (active) helper classes.
 
 | Class | Purpose |
 |-|-|
-| [`Messenger.m`](../Matlab/Actors/Messenger.m) | abcd |
-| [`Navigator.m`](../Matlab/Actors/Navigator.m) | abcd |
-| [`Plotter.m`](../Matlab/Actors/Plotter.m) | abcd |
-| [`Vision.m`](../Matlab/Actors/Vision.m) | abcd |
+| [`Messenger.m`](../Matlab/Actors/Messenger.m) | Creates encoded messages from `map<ID_NUM, Burst>` returned by [`Navigator.m`](../Matlab/Actors/Navigator.m). Broadcasts messages via UDP to clients. Listens for client responses containing sensor data via UDP. |
+| [`Navigator.m`](../Matlab/Actors/Navigator.m) | Reads in sequence of targets from CSV. Determines if robots are converged on current set of targets. Creates a `map<ID_NUM, Burst>` of directions for each robot given each robot's current position and target position. Updates current set of targets in [`Environment.m`](../Matlab/Models/Environment.m) with next set from queue when called.|
+| [`Plotter.m`](../Matlab/Actors/Plotter.m) | Assists in plotting raw webcam images, current and target positional data, and returned sensor data. |
+| [`Vision.m`](../Matlab/Actors/Vision.m) | Handles visual tracking of robots. Takes and binarizes photos of field to determine where white tracking anchors and associated robots are. Updates `Positions` property of [`Environment.m`](../Matlab/Models/Environment.m) object.  |
 
 #### [Models](../Matlab/Models/)
 
@@ -112,10 +112,10 @@ Contains classes for data storage.
 
 | Class | Purpose |
 |-|-|
-| [`Burst.m`](../Matlab/Models/Burst.m) | abcd |
-| [`Environment.m`](../Matlab/Models/Environment.m) | abcd |
-| [`Point.m`](../Matlab/Models/Point.m) | abcd |
-| [`Position.m`](../Matlab/Models/Position.m) | abcd |
+| [`Burst.m`](../Matlab/Models/Burst.m) | Represents the fundamental unit of movement executed by each robot on each discrete-time iteration: an in-place turn of _d_ degrees in (-180,180), followed by a forward burst of _p_ power in (0,256). Sent to robots by way of [`Messenger.m`](../Matlab/Actors/Messenger.m) to direct their convergence on targets. |
+| [`Environment.m`](../Matlab/Models/Environment.m) | Stores global constants of the testbed and dynamic variables of the testing environment, including `Positions` and `Targets`.|
+| [`Point.m`](../Matlab/Models/Point.m) | Represents an (x,y) ordered pair in the testbed. |
+| [`Position.m`](../Matlab/Models/Position.m) | Represents a robot's position in the testbed by way of its `Nose: Point`, `Center: Point`, and `Heading: double` in (0, 360) degrees. |
 
 
 #### [Utils](../Matlab/Utils/)
@@ -124,7 +124,7 @@ Contains auxiliary helper functionalities.
 
 | Class | Purpose |
 |-|-|
-| [`Utils.m`](../Matlab/Utils/Utils.m) | abcd |
+| [`Utils.m`](../Matlab/Utils/Utils.m) | Provides auxiliary static helper functions used across the solution. |
 
 #### [Data](../Matlab/Data/)
 
