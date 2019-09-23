@@ -81,7 +81,7 @@ Leave the top plate of the chassis detached for now. You should have a chassis w
 
 #### 3. Flash ESP firmware
 
-Following the instructions in the [ESP/Readme.pdf](../ESP/Readme.pdf), run the [ESP Flash Tool](../ESP/ESPFlashDownloadTool_v3.6.4.exe) and select the `ESP8266 DownloadTool` from the main menu. Flash the ESP8266 with the following settings to enable its communication with the Arduino UNO. More detailed tutorials involving this flashing process can be found [here](https://medium.com/@aallan/getting-started-with-the-esp8266-270e30feb4d1); a full explanation of the configuration of the ESP8266 is beyond the scope of this tutorial.
+Following the instructions in the [ESP/Readme.pdf](../ESP/Readme.pdf), run the [ESP Flash Tool](../ESP/ESPFlashDownloadTool_v3.6.4.exe) and select the `ESP8266 DownloadTool` from the main menu. Connect to the ESP8266 with an FTDI adapter and flash the following settings to enable its communication with the Arduino UNO. More detailed tutorials involving this flashing process can be found [here](https://medium.com/@aallan/getting-started-with-the-esp8266-270e30feb4d1); a full explanation of the configuration of the ESP8266 is beyond the scope of this tutorial.
 
 ![](Images/ESP-Flash.jpg)
 
