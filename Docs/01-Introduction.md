@@ -1,6 +1,6 @@
 # OpenSwarm Documentation: Introduction
 
-OpenSwarm is an open-source library written by Andrew McDonald at the [D-CYPHER Lab](https://www.egr.msu.edu/d-cypher/) at Michigan State University to facilitate research in swarm robotics and human-robot interaction. By providing full-stack control software and models for robot and testbed construction, the repository aims to enable the curious individual to discover, prototype, and perfect swarm control algorithms in their lab, classroom, or home for under \$70 per robot.
+OpenSwarm is an open-source library written by Andrew McDonald at the [D-CYPHER Lab](https://www.egr.msu.edu/d-cypher/) at Michigan State University to facilitate research in swarm robotics and human-robot interaction. By providing full-stack control software and models for robot and testbed construction, the repository aims to enable the curious individual to discover, prototype, and perfect swarm control algorithms in their lab, classroom, or home for under \$80 per robot.
 
 ## What is Swarm Robotics?
 
