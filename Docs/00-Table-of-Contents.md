@@ -7,10 +7,10 @@
    - What is OpenSwarm?
    - What's Next?
 1. [Getting Started](02-Getting-Started.md)
-   - Bill of Materials
-   - Hardware Setup
+   - Testbed Setup
+   - Robot Setup
    - Software Setup
-   - Full-stack Functionality
+   - Testing
 1. [Hardware](03-Hardware.md)
    - Design Considerations
      - Robot

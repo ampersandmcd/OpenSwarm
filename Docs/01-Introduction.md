@@ -88,7 +88,7 @@ Robot and testbed schematics are further detailed [here](03-Hardware.md), while 
 
 ## What's Next?
 
-If you're an aspiring swarm researcher, check out the rest of the documentation, clone the repository, and build yourself a swarm research platform! If you're new to the world of swarm robotics, do the same!
+If you're an aspiring swarm researcher, check out the rest of the documentation, clone the repository, and [get started](02-Getting-Started.md) building yourself a swarm research platform!
 
 As the platform is leveraged to conduct swarm control research internally within the D-CYPHER Lab, problems involving multi-armed bandits, coverage control, collision avoidance, multi-agent cooperation, consensus-building, distributed leadership, traveling salesmen, and adversarial agents will be analyzed, with the ultimate goal of producing publications beginning fall 2019.
 
