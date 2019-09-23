@@ -117,7 +117,21 @@ Modify the [RobotCover.ipt](../Hardware/3DModels/RobotCover.ipt) to your liking 
 
 ![](Images/ISO-Robot-Covered.JPG)
 
-#### 7. Repeat
+#### 7. Place tracking anchors on top of robot
+
+The OpenSwarm server software locates each robot in the testbed by identifying contiguous patches of white pixels which correspond to white visual tracking anchors mounted on each robot.
+
+To properly integrate with this visual tracking software, each robot must have three white anchors on its top, arranged in an isoceles triangle whose base side is shorter than its legs, and whose base side is opposite the nose of the robot.
+
+That is, the visual tracking anchors should be mounted atop each robot as depicted above: with one anchor near the nose of the robot, and the other two opposite the nose of the robot to form an isoceles triangle which "points" in the direction of the robot's nose.
+
+The visual tracking anchors may be made of paper, white tape, or any bright material, so long as they contrast with the color of the robot cover and testbed floor.
+
+Refer to the schematic below for proper anchor placement:
+
+![](Images/AnchorSchematic.png)
+
+#### 8. Repeat
 
 A set of two to three robots enables one to experiment with the most basic swarm control algorithms; a set of four or more enables one to deal with increasing complexity and correspondingly more sophisticated control algorithms.
 
