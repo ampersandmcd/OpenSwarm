@@ -83,7 +83,7 @@ Leave the top plate of the chassis detached for now. You should have a chassis w
 
 Following the instructions in the [ESP/Readme.pdf](../ESP/Readme.pdf), run the [ESP Flash Tool](../ESP/ESPFlashDownloadTool_v3.6.4.exe) and select the `ESP8266 DownloadTool` from the main menu. Flash the ESP8266 with the following settings to enable its communication with the Arduino UNO. More detailed tutorials involving this flashing process can be found [here](https://medium.com/@aallan/getting-started-with-the-esp8266-270e30feb4d1); a full explanation of the configuration of the ESP8266 is beyond the scope of this tutorial.
 
-![](Images/ESP-Flash.JPG)
+![](Images/ESP-Flash.jpg)
 
 #### 4. Assemble robot circuitry
 
@@ -115,8 +115,13 @@ Photos from intermediate steps throughout the construction process are included 
 
 Modify the [RobotCover.ipt](../Hardware/3DModels/RobotCover.ipt) to your liking in Autodesk Inventor, or print the [RobotCover.stl](../Hardware/3DModels/RobotCover.stl) to improve the aesthetics of your robot.
 
+![](Images/ISO-Robot-Covered.JPG)
+
 #### 7. Repeat
 
+A set of two to three robots enables one to experiment with the most basic swarm control algorithms; a set of four or more enables one to deal with increasing complexity and correspondingly more sophisticated control algorithms.
+
+Though the first robot of the swarm may take upwards of 4 hours to build, subsequent robots will be quicker to construct once one masters the process.
 
 
 ## Software Setup
