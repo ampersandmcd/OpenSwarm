@@ -10,7 +10,7 @@
    - Testbed Setup
    - Robot Setup
    - Software Setup
-   - Testing
+   - Next Steps
 1. [Hardware](03-Hardware.md)
    - Design Considerations
      - Robot

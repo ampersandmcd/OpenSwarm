@@ -205,12 +205,18 @@ If necessary, modify the UDP IP and Port fields within [`Messenger.m`](../Matlab
 
 Utilize Matlab's debugging capabilities to step through [`Test.m`](../Matlab/Controllers/Test.m) and ensure the major components of the OpenSwarm server are properly functioning; step inside function calls to get a sense of how the control software operates. 
 
-Function and class responsibilities should be evident from their names; provided docstrings and internal comments within the source code should explain the logic and role of each component.
+Function and class responsibilities should be evident from their names; provided docstrings and internal comments within the source code should explain the logic and role of each component. More detail regarding software architecture can be found [here](04-Software.md).
 
 In the case of an error, review the provided stack trace, and research the problem using Matlab's `doc` command. In addition, [Matlab Answers](https://www.mathworks.com/matlabcentral/answers/index), Google, or OpenSwarm's [Troubleshooting guide](A1-Troubleshooting.md) may be of assistance. Don't hesitate to [contact us](A2-Contact.md) with questions, either!
 
+## Next Steps
 
-## Testing
+Congratulations! If you've made it this far, you're an official member of the OpenSwarm family.
+
+See if you can recreate the included [demos](05-Demos.md) on your system, then dive into the [hardware](03-Hardware.md) and [software](04-Software.md) specifications to get a better sense of the tools OpenSwarm provides.
+
+From here on out, OpenSwarm is what you choose to make of it!
+
 
 <a href=01-Introduction.md>Previous: Introduction</a>
 
