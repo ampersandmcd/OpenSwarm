@@ -1,8 +1,11 @@
 # OpenSwarm Documentation: Getting Started
 
-This guide is directed at the first-time user building their own OpenSwarm test environment; see the following links for more detailed [hardware](03-Hardware.md) and [software](04-Software.md) specifications.
+This guide is directed at the first-time user building their own OpenSwarm research environment; see the following links for more technically-detailed [hardware](03-Hardware.md) and [software](04-Software.md) specifications.
 
 ## Testbed Setup
+
+#### Time: <1 hour
+#### Cost: $50
 
 ### Bill of Materials
 
@@ -35,9 +38,20 @@ At this stage, your testbed should reflect the conceptual diagram included below
 
 ![](Images/Testbed.png)
 
+The testbed and overhead webcam used to develop the OpenSwarm project are shown below for example; however, note that only one webcam is necessary to support visual robot tracking (the second is used for auxiliary video recording).
+
+![](Images/TestbedGround.JPG)
+
+![](Images/TestbedWebcam.JPG)
+
+
+
 Next, it's time to construct the swarm itself: the robots.
 
 ## Robot Setup
+
+#### Time: 2-4 hours / robot
+#### Cost: $80 / robot
 
 ### Bill of Materials
 
@@ -81,7 +95,7 @@ Leave the top plate of the chassis detached for now. You should have a chassis w
 
 #### 3. Flash ESP firmware
 
-Following the instructions in the [ESP/Readme.pdf](../ESP/Readme.pdf), run the [ESP Flash Tool](../ESP/ESPFlashDownloadTool_v3.6.4.exe) and select the `ESP8266 DownloadTool` from the main menu. Connect to the ESP8266 with an FTDI adapter and flash the following settings to enable its communication with the Arduino UNO. More detailed tutorials involving this flashing process can be found [here](https://medium.com/@aallan/getting-started-with-the-esp8266-270e30feb4d1); a full explanation of the configuration of the ESP8266 is beyond the scope of this tutorial.
+Following the instructions in the [ESP/Readme.pdf](../ESP/Readme.pdf), run the [ESP Flash Tool](../ESP/ESPFlashDownloadTool_v3.6.4.exe) and select the `ESP8266 DownloadTool` from the main menu. Connect to the ESP8266 with an FTDI adapter and flash the following settings from the [ESP8266_NONOS_SDK-2.2.1](../ESP/ESP8266_NONOS_SDK-2.2.1) library to enable its communication with the Arduino UNO. A more detailed tutorial involving this flashing process can be found [here](https://medium.com/@aallan/getting-started-with-the-esp8266-270e30feb4d1); a full explanation of the configuration of the ESP8266 is beyond the scope of this tutorial.
 
 ![](Images/ESP-Flash.jpg)
 
@@ -93,7 +107,7 @@ Following the [Fritzing diagram](../Hardware/Fritzing/RobotSchematic.fzz) shown 
 
 #### 5. Integrate circuitry with chassis
 
-Determine the proper alignment of the top chassis plate left detached in step 2, and mount the Arduino UNO to the bottom of this plate using Command strips or double-sided tape such that the GPIO ports of the UNO face the ground.
+Determine the proper alignment of the top chassis plate left detached in step 2, and mount the Arduino UNO to the bottom of this plate using Command strips or double-sided tape such that the GPIO ports of the UNO face outwards.
 
 Mount the two breadboards and associated components to the top of the middle plate on the chassis, and "sandwich" the jumper cables connecting the UNO to the breadboards between the upwards-facing breadboard mounted on the middle plate and the downwards-facing UNO mounted on the top plate. Thread the indicator LEDs and photoresistor through the top plate so they are visible from outside the "sandwiched" chassis.
 
@@ -113,7 +127,7 @@ Photos from intermediate steps throughout the construction process are included 
 
 #### 6. (Optional) 3D print and mount cover
 
-Modify the [RobotCover.ipt](../Hardware/3DModels/RobotCover.ipt) to your liking in Autodesk Inventor, or print the [RobotCover.stl](../Hardware/3DModels/RobotCover.stl) to improve the aesthetics of your robot.
+Modify the [RobotCover.ipt](../Hardware/3DModels/RobotCover.ipt) to your liking in Autodesk Inventor, then print the [RobotCover.stl](../Hardware/3DModels/RobotCover.stl) to improve the aesthetics of your robot.
 
 ![](Images/ISO-Robot-Covered.JPG)
 
@@ -121,7 +135,7 @@ Modify the [RobotCover.ipt](../Hardware/3DModels/RobotCover.ipt) to your liking 
 
 The OpenSwarm server software locates each robot in the testbed by identifying contiguous patches of white pixels which correspond to white visual tracking anchors mounted on each robot.
 
-To properly integrate with this visual tracking software, each robot must have three white anchors on its top, arranged in an isoceles triangle whose base side is shorter than its legs, and whose base side is opposite the nose of the robot.
+To properly integrate with this visual tracking software, each robot must have three white anchors on its top, arranged in an isoceles triangle whose base is shorter than its legs, and whose base is opposite the nose of the robot.
 
 That is, the visual tracking anchors should be mounted atop each robot as depicted above: with one anchor near the nose of the robot, and the other two opposite the nose of the robot to form an isoceles triangle which "points" in the direction of the robot's nose.
 
@@ -135,10 +149,66 @@ Refer to the schematic below for proper anchor placement:
 
 A set of two to three robots enables one to experiment with the most basic swarm control algorithms; a set of four or more enables one to deal with increasing complexity and correspondingly more sophisticated control algorithms.
 
-Though the first robot of the swarm may take upwards of 4 hours to build, subsequent robots will be quicker to construct once one masters the process.
+Though the first robot of the swarm may take upwards of 4 hours to build, subsequent robots will be quicker to construct once one masters the process. An experienced researcher may be able to construct a robot in as little as two hours.
 
 
 ## Software Setup
+
+#### Time: 1 hour
+#### Cost: Free
+
+### Prerequisites
+
+Clone or download a local copy of the OpenSwarm repository for use throughout the software setup section.
+
+Install Matlab on the designated system control computer, along with an Arduino IDE of your choice: options include the official [Arduino IDE](https://www.arduino.cc/en/main/software), or [Visual Studio Code](https://code.visualstudio.com/download) with the [Arduino Extension](https://marketplace.visualstudio.com/items?itemName=vsciot-vscode.vscode-arduino).
+
+Download the [Matlab Image Acquisition Toolbox](https://www.mathworks.com/help/imaq/index.html?s_tid=CRUX_lftnav) and install it to enable visual tracking by the OpenSwarm server.
+
+### Client (Robot) Setup
+
+#### 1. Modify configuration settings
+
+Modify the fields of the client's [`Configuration.h`](../Arduino/src/include/Configuration.h) file to align with your preferences, leaving hardware pin variable values unchanged. 
+
+At a minimum, set the `ID` to be a unique integer value, and set the `SSID` and `Password` fields to match your local network's. No other settings _need_ be changed, but can be depending on circumstance (e.g., a network IP / port conflict).
+
+#### 2. Upload `Pathfinder.ino` to robot
+
+Using an Arduino IDE of your choice, connect to the the robot's UNO with a USB cable, and upload [`Pathfinder.ino`](../Arduino/src/Pathfinder.ino) to the board. This sketch enables the robot to receive and parse UDP commands transmitted by the OpenSwarm server, then turn and drive in the testbed to execute those commands.
+
+![](Images/RobotUpload.JPG)
+
+For more information on uploading Arduino sketches, see [here](https://www.arduino.cc/en/main/howto).
+
+#### 3. Repeat
+
+Repeat steps 1-2 for each robot in your swarm, and be sure to change the `ID` field in `Configuration.h` in step 1 to a different value for each robot. 
+
+While not necessary, it is recommended to physically label each robot with the `ID` of its `Configuration.h` file for future reference. Consider writing the `ID` number of each robot on a piece of tape, and sticking it to the bottom of each robot.
+
+![](Images/RobotLabel.JPG)
+
+### Server Setup
+
+#### 1. Modify configuration settings
+
+Modify the fields of the server's [Environment.m](../Matlab/Models/Environment.m) file to align with your preferences by adjusting the values inside of the `Environment` constructor.
+
+In particular, be sure to set the `XAxisSize` and `YAxisSize` to match the pixel dimensions of the webcam being used for tracking.
+
+If necessary, modify the parameters of the `videoinput` call inside the `StartCamera` function of [`Vision.m`](../Matlab/Actors/Vision.m) to properly integrate with your system's webcam; if your system only has a single webcam, this setting should not need adjustment.
+
+If necessary, modify the UDP IP and Port fields within [`Messenger.m`](../Matlab/Actors/Messenger.m); by default, however, these settings should not need adjustment.
+
+#### 2. Debug `Test.m`
+
+Utilize Matlab's debugging capabilities to step through [`Test.m`](../Matlab/Controllers/Test.m) and ensure the major components of the OpenSwarm server are properly functioning; step inside function calls to get a sense of how the control software operates. 
+
+Function and class responsibilities should be evident from their names; provided docstrings and internal comments within the source code should explain the logic and role of each component.
+
+In the case of an error, review the provided stack trace, and research the problem using Matlab's `doc` command. In addition, [Matlab Answers](https://www.mathworks.com/matlabcentral/answers/index), Google, or OpenSwarm's [Troubleshooting guide](A1-Troubleshooting.md) may be of assistance. Don't hesitate to [contact us](A2-Contact.md) with questions, either!
+
 
 ## Testing
 
