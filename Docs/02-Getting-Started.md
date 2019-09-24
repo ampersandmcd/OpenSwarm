@@ -193,7 +193,7 @@ While not necessary, it is recommended to physically label each robot with the `
 
 #### 1. Modify configuration settings
 
-Modify the fields of the server's [Environment.m](../Matlab/Models/Environment.m) file to align with your preferences by adjusting the values inside of the `Environment` constructor.
+Modify the fields of the server's [`Environment.m`](../Matlab/Models/Environment.m) file to align with your preferences by adjusting the values inside of the `Environment` constructor.
 
 In particular, be sure to set the `XAxisSize` and `YAxisSize` to match the pixel dimensions of the webcam being used for tracking.
 
@@ -201,13 +201,15 @@ If necessary, modify the parameters of the `videoinput` call inside the `StartCa
 
 If necessary, modify the UDP IP and Port fields within [`Messenger.m`](../Matlab/Actors/Messenger.m); by default, however, these settings should not need adjustment.
 
-#### 2. Debug `Test.m`
+#### 2. Debug [`Test.m`](../Matlab/Controllers/Test.m)
 
 Utilize Matlab's debugging capabilities to step through [`Test.m`](../Matlab/Controllers/Test.m) and ensure the major components of the OpenSwarm server are properly functioning; step inside function calls to get a sense of how the control software operates. 
 
 Function and class responsibilities should be evident from their names; provided docstrings and internal comments within the source code should explain the logic and role of each component. More detail regarding software architecture can be found [here](04-Software.md).
 
-In the case of an error, review the provided stack trace, and research the problem using Matlab's `doc` command. In addition, [Matlab Answers](https://www.mathworks.com/matlabcentral/answers/index), Google, or OpenSwarm's [Troubleshooting guide](A1-Troubleshooting.md) may be of assistance. Don't hesitate to [contact us](A2-Contact.md) with questions, either!
+In the case of an error, review the provided stack trace, and research the problem using Matlab's `doc` command. In addition, [Matlab Answers](https://www.mathworks.com/matlabcentral/answers/index), Google, or OpenSwarm's [Troubleshooting guide](A1-Troubleshooting.md) may be of assistance. 
+
+Don't hesitate to [contact us](A2-Contact.md) with questions, either!
 
 ## Next Steps
 
