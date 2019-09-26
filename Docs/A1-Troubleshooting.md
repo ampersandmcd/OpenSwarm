@@ -1,6 +1,10 @@
-# Troubleshooting Common Errors
+# OpenSwarm Documentation
 
-## My Arduino isn't receiving commands from Matlab
+## Troubleshooting
+
+More coming soon!
+
+#### My Arduino isn't receiving commands from Matlab
 
 First, verify that commands are in fact being sent over UDP by Matlab with a utility like Wireshark. If your host running Matlab is connected to multiple networks, it may be sending the UDP commands over the wrong network, in which case the client Arduinos will not receive the command.
 
@@ -16,8 +20,14 @@ WiFi Status:
 
 If you do not see this message, your Arduino is not connected to the network. Verify that your ESP module is initialized properly, and that you've entered your network SSID and Password correctly.
 
-## Matlab isn't receiving response data from my Arduino
+#### Matlab isn't receiving response data from my Arduino
 
 Ensure that `LDRMode` is set to `true` in `Configuration.h` to enable client -> server response messaging. Next, verify that the Arduino is in fact sending data over UDP by monitoring the network with a utility like Wireshark.
 
 If response data is in fact being sent but is not received by the UDP object in Matlab, check the firewall settings of your machine to ensure UDP traffic is allowed through the ports being used for communication. If necessary, create a new rule allowing UDP traffic through the `TXPort` set in the Arduino's `Configuration.h` file; this is the port over which data is sent from the Arduino to the Matlab server.
+
+#### ... more coming soon!
+
+<a href=05-Demos.md>Previous: Demos</a>
+
+<a href=A2-Contact.md>Next: Contact</a>
