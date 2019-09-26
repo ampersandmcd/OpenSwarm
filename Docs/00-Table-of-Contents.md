@@ -26,6 +26,7 @@
      - Server-Side (Matlab)
      - Client-Side (Arduino)
 1. [Demos](05-Demos.md)
+   - Pathfinder
 
 ## Appendices
 
