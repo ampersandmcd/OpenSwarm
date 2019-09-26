@@ -78,16 +78,14 @@ classdef Plotter < handle
             %PlotColorImage: display a color image on ColorImageAxes
             imshow(img, 'Parent', obj.ColorImageAxes);
             title(obj.ColorImageAxes, 'Webcam: Color');
-            obj.ColorImageAxes.Visible = 'On';
-            set(obj.ColorImageAxes, 'box', 'off');
+            obj.ColorImageAxes.Visible = 'off';
         end
         
         function obj = PlotBWImage(obj, img)
             %PlotBWImage: display a BW image on BWImageAxes
             imshow(img, 'Parent', obj.BWImageAxes);
             title(obj.BWImageAxes, 'Webcam: BW');
-            obj.BWImageAxes.Visible = 'On';
-            set(obj.BWImageAxes, 'box', 'off');
+            obj.BWImageAxes.Visible = 'off';
         end
         
         function obj = PlotPositions(obj)
