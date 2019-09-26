@@ -44,7 +44,7 @@ An easy way to achieve such a valid starting position is to simply order the rob
 
 Example run of [`Pathfinder.m`](../Matlab/Controllers/Pathfinder.m) with [`circle.csv`](../Matlab/Data/circle.csv) as path input:
 
-<iframe src="https://drive.google.com/file/d/1sg5UwmmTrKHravdvXssg3EsE5B3mb11p/preview" width="640" height="480"></iframe>
+[![](Images/SwarmCircleThumbnail.png)](https://drive.google.com/file/d/1sg5UwmmTrKHravdvXssg3EsE5B3mb11p/preview)
 
 <a href=04-Software.md>Previous: Software</a>
 
