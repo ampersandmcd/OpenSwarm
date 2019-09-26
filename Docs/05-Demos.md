@@ -42,6 +42,10 @@ An easy way to achieve such a valid starting position is to simply order the rob
 
 ### Video
 
+Example run of [`Pathfinder.m`](../Matlab/Controllers/Pathfinder.m) with [`circle.csv`](../Matlab/Data/circle.csv) as path input:
+
+![](Videos/SwarmCircle.mp4)
+
 <a href=04-Software.md>Previous: Software</a>
 
 <a href=A1-Troubleshooting.md>Next: Troubleshooting</a>
