@@ -40,11 +40,11 @@ An easy way to achieve such a valid starting position is to simply order the rob
 
         end for
 
-### Video
+### [Video](https://drive.google.com/file/d/1sg5UwmmTrKHravdvXssg3EsE5B3mb11p/preview)
 
 Example run of [`Pathfinder.m`](../Matlab/Controllers/Pathfinder.m) with [`circle.csv`](../Matlab/Data/circle.csv) as path input:
 
-[![](Images/SwarmCircleThumbnail.PNG)](https://drive.google.com/file/d/1sg5UwmmTrKHravdvXssg3EsE5B3mb11p/preview)
+[![](Images/SwarmCircleThumbnail.gif)](https://drive.google.com/file/d/1sg5UwmmTrKHravdvXssg3EsE5B3mb11p/preview)
 
 <a href=04-Software.md>Previous: Software</a>
 
