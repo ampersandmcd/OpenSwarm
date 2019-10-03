@@ -89,7 +89,7 @@ for x0 = 1:spacing:x_axis_sz
 end
 
 max_z = -min_z; % need to invert after fminsearch to get max
-disp([max_xy, max_z]);
+disp([min_xy, max_z]);
 norm_f = @(x,y) 1/max_z*f(x,y); % normalize
 
 % vizualize normalized function

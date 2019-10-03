@@ -2,8 +2,8 @@ x_axis_sz = 1024;
 y_axis_sz = 768;
 dx = 50;
 max_clicks = 5;
-threshold = 0.05; % value representing +/- decimal acceptable uncertainty [values are normalized to range between 0-1]
-num_robots = 5; % for k-means clustering
+threshold = 0.15; % value representing +/- decimal acceptable uncertainty [values are normalized to range between 0-1]
+num_robots = 3; % for k-means clustering
 
 %note: points from LightMap input are duplicate from upper & lowc.close aller bounds
 % [train_points, og_points, confidence] = LightmapInput(x_axis_sz, y_axis_sz, dx, max_clicks);
