@@ -1,6 +1,7 @@
 % basic GP
 % Author: Shaunak D. Bopardikar
 
+clear all
 close all
 
 % generating function
@@ -19,7 +20,7 @@ xTrain = 10*(rand(nTrain,2)-0.5);
 yTrain = feval(f, xTrain(:, 1), xTrain(:, 2), randn(nTrain,1));
 
 % GPML
-run('../gpml/gpstartup.m');
+run('startup.m');
 %covfunc = @covSEiso;% Uses squared exponential Kernel
 covfunc = {'covProd',{'covSEiso','covSEiso'}};
 meanfunc = @meanConst;
