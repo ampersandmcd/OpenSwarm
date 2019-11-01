@@ -8,6 +8,9 @@
 
 %% SETUP
 
+% run GPML Startup
+run('./gpml/gpstartup.m');
+
 % configure OpenSwarm tracking
 
 % initialize environment settings
@@ -27,14 +30,33 @@ messenger = Messenger(environment, plotter);
 
 
 
-% configure HILGPC setup
+% configure HILGPC
 
 % configure HILGPC settings
-hilgpc_settings = HILGPC_Settings(10, 0.15);
+threshold_uncertainty = 0.1;
+hilgpc_settings = HILGPC_Settings(threshold_uncertainty);
 
 % create HILGPC data object
-hilgpc_data = HILGPC_Data(environment, hilgpc_settings);
+% hilgpc_data = HILGPC_Data(environment, hilgpc_settings);
 
 
-%% ACTION
+
+
+%% INPUT
+
+% hilgpc_data.GetHumanPrior();
+hilgpc_data.ComputeGP();
+hilgpc_data.VisualizeGP();
+
+
+
+%% PLAN
+
+
+
+%% SAMPLE
+
+
+
+%% COVER
 disp("hi")

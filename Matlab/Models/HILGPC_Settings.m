@@ -7,7 +7,9 @@ classdef HILGPC_Settings
     properties
         % Settings for use in evaluation of GP
         GridResolution
-        ConfidenceThreshold
+        UncertaintyThreshold
+        MaxClicks         % (levels of user input)
+        DistanceThreshold % (between user input points)
         
         % Functions for use in GP model
         MeanFunction
@@ -16,17 +18,19 @@ classdef HILGPC_Settings
     end
     
     methods
-        function obj = HILGPC_Settings(resolution, threshold)
+        function obj = HILGPC_Settings(threshold)
             %HILGPC_SETTINGS
             %   Instantiate settings object
-            obj.GridResolution = resolution;
-            obj.ConfidenceThreshold = threshold;
+            obj.UncertaintyThreshold = threshold;
             
             % manually configure the following properties in this class
             % (they will not change often)
-            obj.MeanFunction = @meanConst;
+            obj.GridResolution = 10;
+            obj.DistanceThreshold = 50;
+            obj.MaxClicks = 5;
+            obj.MeanFunction = [];
             obj.CovFunction = @covSEiso;
-            obj.LikFunction = @likGaussian;
+            obj.LikFunction = @likGauss;
         end
     end
 end
