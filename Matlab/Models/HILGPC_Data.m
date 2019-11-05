@@ -56,9 +56,14 @@ classdef HILGPC_Data < handle
             hyp.cov = log([ell; sf]);
             hyp.mean = [];
             sn = 1;
-            hyp.lik = log(sn);
-            
+            hyp.lik = log(sn);            
             obj.Hyp = hyp;
+            
+            % if reusing user input, load data
+            if obj.Settings.RecycleHumanPrior
+                obj.RecycleHumanPrior();
+            end
+            
         end
         
         function obj = GetHumanPrior(obj)
@@ -206,13 +211,43 @@ classdef HILGPC_Data < handle
             mesh(plotX, plotY, reshape(obj.TestMeans, size(plotX, 1), []));
             colormap(gray);
             
-            % mesh upper and lower bounds
+            % mesh upper and lower 95CI bounds
             lower_bound = obj.TestMeans - 2*sqrt(obj.TestS2);
             upper_bound = obj.TestMeans + 2*sqrt(obj.TestS2);
             mesh(plotX, plotY, reshape(lower_bound, size(plotX, 1), []), 'FaceColor', [0,1,1], 'EdgeColor', 'blue', 'FaceAlpha', 0.3);
             mesh(plotX, plotY, reshape(upper_bound, size(plotX, 1), []), 'FaceColor', [1,0.5,0], 'EdgeColor', 'red', 'FaceAlpha', 0.3);
         
             view(3)
+        end
+        
+        function RecycleHumanPrior(obj)
+            
+           prior = readtable(obj.Settings.RecycleFilename);
+           
+           % save first two columns of (x,y) points without header row
+           obj.InputPoints = prior{1:end, 1:2};
+           obj.TrainPoints = obj.InputPoints;
+           
+           % save third column of means without header row
+           obj.InputMeans = prior{1:end, 3};
+           obj.TrainMeans = obj.InputMeans;
+           
+           % save user confidence in fourth column without header row
+           obj.InputConfidence = prior{1, 4};
+           
+        end
+        
+        function SaveHumanPrior(obj, filename)
+            
+            prior = cat(2, obj.InputPoints, obj.InputMeans);
+            prior(1, 4) = obj.InputConfidence;
+            
+            file = fopen(filename, 'w');
+            fprintf(file, "X,Y,Means,Confidence\n");
+            fclose(file);
+            
+            dlmwrite(filename, prior, '-append');
+            
         end
     end
 end

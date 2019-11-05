@@ -5,6 +5,10 @@ classdef HILGPC_Settings
     %   types used in GP, etc.
     
     properties
+        % Reuse saved user input?
+        RecycleHumanPrior
+        RecycleFilename
+        
         % Settings for use in evaluation of GP
         GridResolution
         UncertaintyThreshold
@@ -18,10 +22,12 @@ classdef HILGPC_Settings
     end
     
     methods
-        function obj = HILGPC_Settings(threshold)
+        function obj = HILGPC_Settings(threshold, recycle, filename)
             %HILGPC_SETTINGS
             %   Instantiate settings object
             obj.UncertaintyThreshold = threshold;
+            obj.RecycleHumanPrior = recycle;
+            obj.RecycleFilename = filename;
             
             % manually configure the following properties in this class
             % (they will not change often)

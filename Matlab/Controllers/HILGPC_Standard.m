@@ -6,18 +6,14 @@
 %   achieve coverage.
 
 
-%% SETUP
+%% SETUP: OpenSwarm depenencies
 
-% run GPML Startup
-run('./gpml/gpstartup.m');
-
-% configure OpenSwarm tracking
 
 % initialize environment settings
 environment = Environment(3);
 
 % initialize plot helper object
-plotter = Plotter(environment);
+% plotter = Plotter(environment);
 
 % initialize webcam tracking and purge autofocus
 % vision = Vision(environment, plotter);
@@ -29,25 +25,32 @@ navigator = Navigator(environment, plotter);
 messenger = Messenger(environment, plotter);
 
 
+%% SETUP: HILGPC dependencies
 
-% configure HILGPC
+
+% run GPML Startup
+run('./gpml/gpstartup.m');
 
 % configure HILGPC settings
 threshold_uncertainty = 0.1;
-hilgpc_settings = HILGPC_Settings(threshold_uncertainty);
+recycle_human_prior = true;
+human_prior_filename = "prior1.csv";
+hilgpc_settings = HILGPC_Settings(threshold_uncertainty, recycle_human_prior, human_prior_filename);
 
 % create HILGPC data object
-% hilgpc_data = HILGPC_Data(environment, hilgpc_settings);
-
-
+hilgpc_data = HILGPC_Data(environment, hilgpc_settings);
 
 
 %% INPUT
 
-% hilgpc_data.GetHumanPrior();
+if ~recycle_human_prior
+    % if not recycling input, get input and save it
+    hilgpc_data.GetHumanPrior();
+    hilgpc_data.SaveHumanPrior(human_prior_filename);
+end
+
 hilgpc_data.ComputeGP();
 hilgpc_data.VisualizeGP();
-
 
 
 %% PLAN
