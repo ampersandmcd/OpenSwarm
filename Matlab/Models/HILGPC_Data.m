@@ -110,9 +110,9 @@ classdef HILGPC_Data < handle
             
             
             % get user input confidence
-            confidence = inputdlg('Enter confidence in your measurements, on a scale from 0 to 100');
+            confidence = inputdlg('Enter confidence in your measurements, on a scale from 1 to 10');
             obj.InputConfidence = str2double(confidence{1});
-            
+                        
             
             % done with input -> convert inputs into [x,y] array and store
             % into InputPoints, InputMeans, TrainPoints and TrainMeans
@@ -125,14 +125,25 @@ classdef HILGPC_Data < handle
                 [x,y] = point.ToPair();
                 
                 obj.InputPoints(i, 1:2) = [x,y];
-                obj.TrainPoints(i, 1:2) = [x,y];
                 
                 % store input mean
                 obj.InputMeans(i, 1) = inputs{i, 2};
-                obj.TrainMeans(i, 1) = inputs{i, 2};
             end
             
-            % returns with InputPoints, InputMeans, InputConfidence set
+            
+            % add SamplesPerObservation number of points to the training
+            % set with Gaussian noise inversely proportional to user
+            % confidence
+            for i = 1:obj.Settings.SamplesPerObservation
+                
+                obj.TrainPoints = cat(1, obj.TrainPoints, obj.InputPoints);
+                
+                multiplier = 1/obj.InputConfidence;
+                noise = multiplier .* randn(size(obj.InputMeans, 1));
+                obj.TrainMeans = cat(1, obj.TrainMeans, obj.InputMeans + noise);
+                
+            end
+            
         end
         
         function h = GetInputGUI(obj)
@@ -150,8 +161,8 @@ classdef HILGPC_Data < handle
             
             % configure aesthetics
             title(sprintf("Click to indicate function mean on testbed from\n " ...
-                + "scale of 1-%d, where 0 = no information,\n 1 = darkest and " ...
-                + "%d = brightest", obj.Settings.MaxClicks, obj.Settings.MaxClicks));
+                + "scale of 0-%d, where\n 0 = darkest and " ...
+                + "%d = brightest", obj.Settings.MaxClicks-1, obj.Settings.MaxClicks));
             box on;
             daspect([1,1,1]);
             colormap(jet);
@@ -177,7 +188,7 @@ classdef HILGPC_Data < handle
         function obj = ComputeGP(obj)
             
             % optimize hyperparameters
-            obj.Hyp = minimize(obj.Hyp, @gp, -1000, @infGaussLik, obj.Settings.MeanFunction,...
+            obj.Hyp = minimize(obj.Hyp, @gp, -obj.Settings.MaxEvals, @infGaussLik, obj.Settings.MeanFunction,...
                 obj.Settings.CovFunction, obj.Settings.LikFunction, obj.TrainPoints, obj.TrainMeans);
             
             % compute on testpoints
@@ -203,8 +214,18 @@ classdef HILGPC_Data < handle
             hold on;
             
             % scatter ground truth from human
-            scatter3(obj.TrainPoints(:,1) , obj.TrainPoints(:,2), obj.TrainMeans, 'black', 'filled');
-
+            scatter3(obj.InputPoints(:,1) , obj.InputPoints(:,2), obj.InputMeans, 'black', 'filled');
+            
+            % scatter Gaussian-shifted training points based on ground
+            % truth of human
+            div = size(obj.InputPoints, 1) * obj.Settings.SamplesPerObservation;
+            scatter3(obj.TrainPoints(1:div,1) , obj.TrainPoints(1:div,2), obj.TrainMeans(1:div), 'magenta', 'filled');
+            
+            % scatter points-to-sample in green
+            if size(obj.SamplePoints, 1) > 0
+                scatter3(obj.SamplePoints(:,1) , obj.SamplePoints(:,2), obj.SampleMeans(:,1), 'green', 'filled');
+            end
+            
             % mesh GP surface
             [plotX, plotY] = meshgrid(0:obj.Settings.GridResolution:obj.Environment.XAxisSize, ...
                                         0:obj.Settings.GridResolution:obj.Environment.YAxisSize);
@@ -226,14 +247,25 @@ classdef HILGPC_Data < handle
            
            % save first two columns of (x,y) points without header row
            obj.InputPoints = prior{1:end, 1:2};
-           obj.TrainPoints = obj.InputPoints;
            
            % save third column of means without header row
            obj.InputMeans = prior{1:end, 3};
-           obj.TrainMeans = obj.InputMeans;
            
            % save user confidence in fourth column without header row
            obj.InputConfidence = prior{1, 4};
+           
+           % add SamplesPerObservation number of points to the training
+           % set with Gaussian noise inversely proportional to user
+           % confidence
+           for i = 1:obj.Settings.SamplesPerObservation
+               
+               obj.TrainPoints = cat(1, obj.TrainPoints, obj.InputPoints);
+               
+               multiplier = 1/obj.InputConfidence;
+               noise = multiplier .* randn(size(obj.InputMeans));
+               obj.TrainMeans = cat(1, obj.TrainMeans, obj.InputMeans + noise);
+               
+           end
            
         end
         
@@ -249,6 +281,7 @@ classdef HILGPC_Data < handle
             dlmwrite(filename, prior, '-append');
             
         end
+                
     end
 end
 

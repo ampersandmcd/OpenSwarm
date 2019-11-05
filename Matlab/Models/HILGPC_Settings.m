@@ -11,9 +11,11 @@ classdef HILGPC_Settings
         
         % Settings for use in evaluation of GP
         GridResolution
-        UncertaintyThreshold
-        MaxClicks         % (levels of user input)
-        DistanceThreshold % (between user input points)
+        S2Threshold
+        MaxEvals          % function evaluation limit for minimize
+        MaxClicks         % levels of user input
+        DistanceThreshold % between user input points
+        SamplesPerObservation % how many points to put in training data per single human input point
         
         % Functions for use in GP model
         MeanFunction
@@ -25,7 +27,7 @@ classdef HILGPC_Settings
         function obj = HILGPC_Settings(threshold, recycle, filename)
             %HILGPC_SETTINGS
             %   Instantiate settings object
-            obj.UncertaintyThreshold = threshold;
+            obj.S2Threshold = threshold;
             obj.RecycleHumanPrior = recycle;
             obj.RecycleFilename = filename;
             
@@ -33,7 +35,9 @@ classdef HILGPC_Settings
             % (they will not change often)
             obj.GridResolution = 10;
             obj.DistanceThreshold = 50;
-            obj.MaxClicks = 5;
+            obj.MaxEvals = 10;
+            obj.SamplesPerObservation = 2;
+            obj.MaxClicks = 6;
             obj.MeanFunction = [];
             obj.CovFunction = @covSEiso;
             obj.LikFunction = @likGauss;
