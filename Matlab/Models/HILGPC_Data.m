@@ -238,6 +238,12 @@ classdef HILGPC_Data < handle
             mesh(plotX, plotY, reshape(lower_bound, size(plotX, 1), []), 'FaceColor', [0,1,1], 'EdgeColor', 'blue', 'FaceAlpha', 0.3);
             mesh(plotX, plotY, reshape(upper_bound, size(plotX, 1), []), 'FaceColor', [1,0.5,0], 'EdgeColor', 'red', 'FaceAlpha', 0.3);
         
+            title(sprintf("Estimated Function with Sample Points\n(s2 threshold = %f)", obj.Settings.S2Threshold));
+            legend(["Human-input ground truth", ...
+                "Gaussian-shifted train points to account for confidence", ...
+                "Points to sample", "Mean", "Lower CI-95", "Upper CI-95"], ...
+                'Location', 'Northeast');
+            
             view(3)
         end
         

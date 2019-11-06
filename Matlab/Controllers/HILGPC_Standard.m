@@ -13,7 +13,7 @@
 environment = Environment(3);
 
 % initialize plot helper object
-% plotter = Plotter(environment);
+plotter = Plotter(environment);
 
 % initialize webcam tracking and purge autofocus
 % vision = Vision(environment, plotter);
@@ -71,6 +71,7 @@ hilgpc_data.VisualizeGP();
 % into k = environment.NumRobots clusters, and create a TargetQueue for
 % robots to follow based on a TSP tour of each cluster
 target_queue = hilgpc_planner.ClusterTSPTour();
+hilgpc_planner.VisualizeTour();
 
 % set navigator.TargetQueue to prepare for sampling phase
 navigator.TargetQueue = target_queue;
