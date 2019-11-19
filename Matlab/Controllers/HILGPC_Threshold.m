@@ -1,4 +1,4 @@
-% HILGPC_Standard:
+% HILGPC_Threshold:
 %   Create prior distribution from human-input points.
 %   Given confidence threshold, determine necessary points to sample.
 %   K-means and TSP the sample points, then update distribution.
@@ -7,7 +7,6 @@
 
 
 %% SETUP: OpenSwarm depenencies
-
 
 % initialize environment settings
 environment = Environment(3);
@@ -25,8 +24,8 @@ navigator = Navigator(environment, plotter);
 messenger = Messenger(environment, plotter);
 
 
-%% SETUP: HILGPC dependencies
 
+%% SETUP: HILGPC dependencies
 
 % run GPML Startup
 run('./gpml/gpstartup.m');
@@ -37,7 +36,7 @@ rng(100);
 % configure HILGPC settings
 s2_threshold = 0.25; % variance < 0.25 ==> std_dev < 0.5
 recycle_human_prior = true;
-human_prior_filename = "prior1_confidence2.csv";
+human_prior_filename = "prior_mountain_confidence5.csv";
 hilgpc_settings = HILGPC_Settings(s2_threshold, recycle_human_prior, human_prior_filename);
 
 % create HILGPC data object
@@ -45,6 +44,7 @@ hilgpc_data = HILGPC_Data(environment, hilgpc_settings);
 
 % create HILGPC actors
 hilgpc_planner = HILGPC_Planner(environment, hilgpc_settings, hilgpc_data);
+
 
 
 %% INPUT
@@ -57,6 +57,7 @@ end
 
 hilgpc_data.ComputeGP();
 hilgpc_data.VisualizeGP();
+
 
 
 %% PLAN

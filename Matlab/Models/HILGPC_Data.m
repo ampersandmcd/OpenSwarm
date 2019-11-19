@@ -32,6 +32,14 @@ classdef HILGPC_Data < handle
         TestS2          % n rows output by model
         TestFigure      % handle to visualization
         
+        % Most recent centroid positions from weighted voronoi partition
+        Centroids       % map<str(id), Position> of centroids of weighted voronoi partition
+        CentroidsMatrix % simple nRobots x 2 matrix of x,y positions of centroids
+        
+        % Most recent uncertainty-maximizing positions from weighted voronoi partition
+        MaxU            % map<str(id), Position> of MaxU positions in weighted voronoi cells
+        MaxUMatrix      % simple nRobots x 2 matrix of x,y positions of MaxU points
+        
         % Other relevant GP data
         Hyp             % hyperparameters of GP model
     end
@@ -88,7 +96,7 @@ classdef HILGPC_Data < handle
                        other_point = inputs{i, 1};
                        if point.Distance(other_point) < obj.Settings.DistanceThreshold
                           % increment count of other point in temp_input cell array
-                          inputs{i, 2} = mod((inputs{i, 2} + 1), obj.Settings.MaxClicks);
+                          inputs{i, 2} = mod((inputs{i, 2} + 1), obj.Settings.MaxClicks+1);
                           is_new_point = false;
                           break;
                        end
@@ -110,7 +118,7 @@ classdef HILGPC_Data < handle
             
             
             % get user input confidence
-            confidence = inputdlg('Enter confidence in your measurements, on a scale from 1 to 10');
+            confidence = inputdlg('Enter confidence in your measurements as a decimal between 0 and 1');
             obj.InputConfidence = str2double(confidence{1});
                         
             
@@ -131,19 +139,33 @@ classdef HILGPC_Data < handle
             end
             
             
-            % add SamplesPerObservation number of points to the training
-            % set with Gaussian noise inversely proportional to user
-            % confidence
-            for i = 1:obj.Settings.SamplesPerObservation
+            % add 2 points to the training set each offset by one stddev 
+            % to properly train model mean and variance given imperfect
+            % human input
+
+            % compute uncertainty
+            uncertainty = 1 - obj.InputConfidence;
+            
+            % iterate through input means and shift up and down to
+            % upper/lower uncertainty bounds to create train means
+            for i = 1:size(obj.InputPoints, 1)
                 
-                obj.TrainPoints = cat(1, obj.TrainPoints, obj.InputPoints);
+                % compute upper and lower bounds
+                mean = obj.InputMeans(i, 1);
+                shift = uncertainty * mean;
+                upper = mean + shift;
+                lower = mean - shift;
                 
-                multiplier = 1/obj.InputConfidence;
-                noise = multiplier .* randn(size(obj.InputMeans, 1));
-                obj.TrainMeans = cat(1, obj.TrainMeans, obj.InputMeans + noise);
+                % create lower bound train point on odd indices
+                obj.TrainPoints(2*i-1, 1:2) = obj.InputPoints(i, 1:2);
+                obj.TrainMeans(2*i-1, 1) = lower;
+                
+                % create upper bound train point on even indices
+                obj.TrainPoints(2*i, 1:2) = obj.InputPoints(i, 1:2);
+                obj.TrainMeans(2*i, 1) = upper;
                 
             end
-            
+                 
         end
         
         function h = GetInputGUI(obj)
@@ -162,7 +184,7 @@ classdef HILGPC_Data < handle
             % configure aesthetics
             title(sprintf("Click to indicate function mean on testbed from\n " ...
                 + "scale of 0-%d, where\n 0 = darkest and " ...
-                + "%d = brightest", obj.Settings.MaxClicks-1, obj.Settings.MaxClicks));
+                + "%d = brightest", obj.Settings.MaxClicks, obj.Settings.MaxClicks));
             box on;
             daspect([1,1,1]);
             colormap(jet);
@@ -202,6 +224,13 @@ classdef HILGPC_Data < handle
             
         end
         
+        function u = GetMaxUncertainty(obj)
+            
+            % return maximum uncertainty point in entire field
+            u = max(obj.TestS2);
+            
+        end
+        
         function obj = VisualizeGP(obj)
             
             if isempty(obj.TestFigure)
@@ -218,12 +247,11 @@ classdef HILGPC_Data < handle
             
             % scatter Gaussian-shifted training points based on ground
             % truth of human
-            div = size(obj.InputPoints, 1) * obj.Settings.SamplesPerObservation;
-            scatter3(obj.TrainPoints(1:div,1) , obj.TrainPoints(1:div,2), obj.TrainMeans(1:div), 'magenta', 'filled');
+            scatter3(obj.TrainPoints(:,1) , obj.TrainPoints(:,2), obj.TrainMeans(:,1), 'magenta', 'filled');
             
             % scatter points-to-sample in green
             if size(obj.SamplePoints, 1) > 0
-                scatter3(obj.SamplePoints(:,1) , obj.SamplePoints(:,2), obj.SampleMeans(:,1), 'green', 'filled');
+                scatter3(obj.SamplePoints(:,1) , obj.SamplePoints(:,2), obj.SampleMeans(:,1), 'blue', 'filled');
             end
             
             % mesh GP surface
@@ -249,30 +277,46 @@ classdef HILGPC_Data < handle
         
         function RecycleHumanPrior(obj)
             
-           prior = readtable(obj.Settings.RecycleFilename);
-           
-           % save first two columns of (x,y) points without header row
-           obj.InputPoints = prior{1:end, 1:2};
-           
-           % save third column of means without header row
-           obj.InputMeans = prior{1:end, 3};
-           
-           % save user confidence in fourth column without header row
-           obj.InputConfidence = prior{1, 4};
-           
-           % add SamplesPerObservation number of points to the training
-           % set with Gaussian noise inversely proportional to user
-           % confidence
-           for i = 1:obj.Settings.SamplesPerObservation
-               
-               obj.TrainPoints = cat(1, obj.TrainPoints, obj.InputPoints);
-               
-               multiplier = 1/obj.InputConfidence;
-               noise = multiplier .* randn(size(obj.InputMeans));
-               obj.TrainMeans = cat(1, obj.TrainMeans, obj.InputMeans + noise);
-               
-           end
-           
+            prior = readtable(obj.Settings.RecycleFilename);
+            
+            % save first two columns of (x,y) points without header row
+            obj.InputPoints = prior{1:end, 1:2};
+            
+            % save third column of means without header row
+            obj.InputMeans = prior{1:end, 3};
+            
+            % save user confidence in fourth column without header row
+            obj.InputConfidence = prior{1, 4};
+            
+            % build test set
+            
+            % add 2 points to the training set each offset by one stddev
+            % to properly train model mean and variance given imperfect
+            % human input
+            
+            % compute uncertainty
+            uncertainty = 1 - obj.InputConfidence;
+            
+            % iterate through input means and shift up and down to
+            % upper/lower uncertainty bounds to create train means
+            for i = 1:size(obj.InputPoints, 1)
+                
+                % compute upper and lower bounds
+                mean = obj.InputMeans(i, 1);
+                shift = uncertainty * mean;
+                upper = mean + shift;
+                lower = mean - shift;
+                
+                % create lower bound train point on odd indices
+                obj.TrainPoints(2*i-1, 1:2) = obj.InputPoints(i, 1:2);
+                obj.TrainMeans(2*i-1, 1) = lower;
+                
+                % create upper bound train point on even indices
+                obj.TrainPoints(2*i, 1:2) = obj.InputPoints(i, 1:2);
+                obj.TrainMeans(2*i, 1) = upper;
+                
+            end
+            
         end
         
         function SaveHumanPrior(obj, filename)
@@ -287,7 +331,71 @@ classdef HILGPC_Data < handle
             dlmwrite(filename, prior, '-append');
             
         end
-                
+        
+        function ComputeCentroids(obj)
+            % test helper methods
+            positions = obj.PositionsToMatrix();
+            map = obj.MatrixToPositions(positions);
+            % Given TestPoints and TestMeans taken as the demand function,
+            % computes weighted voronoi partition of field given robot
+            % positions specified by environment.Positions and sets
+            % Centroids member variable accordingly
+        end
+        
+        function VisualizeCentroids(obj)
+            % Plots Centroids member variable after ComputeCentroids is
+            % called
+        end
+        
+        function ComputeCellMaxU(obj)
+            % test helper methods
+            positions = obj.PositionsToMatrix();
+            map = obj.MatrixToPositions(positions);
+            % Given TestPoints, TestMeans, and TestSD taken as the demand function,
+            % computes weighted voronoi partition of field given robot
+            % positions specified by environment.Positions, then finds
+            % uncertainty-maximizing point within each cell, and sets MaxU
+            % member variable accordingly
+        end
+        
+        function VisualizeCellMaxU(obj)
+            % Plots MaxU member variable after ComputeCellMaxU is called
+        end
+        
+        function mat = PositionsToMatrix(obj)
+           % Helper function to convert environment.Positions map to a simple
+           % nRobots x 2 matrix of x,y positions
+           
+           mat = zeros(obj.Environment.NumRobots, 2);
+           map = obj.Environment.Positions;
+           
+           for i = 1:obj.Environment.NumRobots
+               position = map(num2str(i));
+               x = position.Center.X;
+               y = position.Center.Y;
+               mat(i, 1:2) = [x,y];
+           end
+           
+           % returns simple nRobots x 2 matrix of x_i,y_i in ith row           
+           
+        end
+        
+        function map = MatrixToPositions(obj, mat)
+           % Helper function to convert a simple nRobots x 2 matrix of 
+           % x,y positions to a map
+           
+           map = containers.Map;
+           
+           for i = 1:obj.Environment.NumRobots
+               x = mat(i, 1);
+               y = mat(i, 2);
+               position = Position.TargetPosition(x, y);
+               map(num2str(i)) = position;
+           end
+           
+           % returns map<str(id), Position> from xy matrix
+           
+        end
     end
 end
 

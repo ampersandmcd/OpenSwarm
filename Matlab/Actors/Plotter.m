@@ -101,7 +101,7 @@ classdef Plotter < handle
             % for each robot and its target in the positions map, plot and label
             for i = 1:obj.Environment.NumRobots
                 position = obj.Environment.Positions(num2str(i));
-                target = obj.Environment.Targets(num2str(i));
+%                 target = obj.Environment.Targets(num2str(i));
                 
                 % plot and label position, heading, (x,y) coords:
                 scatter(obj.LocationAxes, position.Center.X, position.Center.Y, obj.DotSize, obj.PositionColor);
@@ -113,8 +113,8 @@ classdef Plotter < handle
                 %text(obj.LocationAxes, (position.Center.X - obj.XLabelOffset), (position.Center.Y - obj.YLabelOffset), num2str(position.Heading), 'Color', obj.HeadingTextColor)
 
                 % plot and label target
-                scatter(obj.LocationAxes, target.Center.X, target.Center.Y, obj.DotSize, obj.TargetColor);
-                text(obj.LocationAxes, (target.Center.X + obj.XLabelOffset), (target.Center.Y + obj.YLabelOffset), num2str(i), 'Color', obj.TargetTextColor)
+%                 scatter(obj.LocationAxes, target.Center.X, target.Center.Y, obj.DotSize, obj.TargetColor);
+%                 text(obj.LocationAxes, (target.Center.X + obj.XLabelOffset), (target.Center.Y + obj.YLabelOffset), num2str(i), 'Color', obj.TargetTextColor)
                 
             end
             

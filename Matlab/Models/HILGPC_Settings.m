@@ -15,7 +15,6 @@ classdef HILGPC_Settings
         MaxEvals          % function evaluation limit for minimize
         MaxClicks         % levels of user input
         DistanceThreshold % between user input points
-        SamplesPerObservation % how many points to put in training data per single human input point
         
         % Functions for use in GP model
         MeanFunction
@@ -36,8 +35,7 @@ classdef HILGPC_Settings
             obj.GridResolution = 10;
             obj.DistanceThreshold = 50;
             obj.MaxEvals = 10;
-            obj.SamplesPerObservation = 2;
-            obj.MaxClicks = 6;
+            obj.MaxClicks = 5;
             obj.MeanFunction = [];
             obj.CovFunction = @covSEiso;
             obj.LikFunction = @likGauss;
