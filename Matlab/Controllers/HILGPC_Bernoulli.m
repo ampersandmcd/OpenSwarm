@@ -27,7 +27,7 @@ messenger = Messenger(environment, plotter);
 %% SETUP: HILGPC dependencies
 
 % run GPML Startup
-run('./gpml/gpstartup.m');
+run('gpstartup.m');
 
 % set random seed for Gaussian reproducibility
 rng(100);
@@ -35,7 +35,7 @@ rng(100);
 % configure HILGPC settings
 s2_threshold = 0; % parameter does not apply in this algorithm - only in Threshold algorithm
 recycle_human_prior = true;
-human_prior_filename = "prior1_confidence0.5.csv";
+human_prior_filename = "prior1_confidence1.0.csv";
 hilgpc_settings = HILGPC_Settings(s2_threshold, recycle_human_prior, human_prior_filename);
 
 % create HILGPC data object
@@ -66,6 +66,11 @@ max_u = hilgpc_data.GetMaxUncertainty();
 k = 1; % tuning parameter greater than 0
 prob_exploit = exp(-k * max_u);
 
+
+
+% testing
+positions = [0,0;1000,0;500,700];
+hilgpc_data.ComputeCentroids();
 
 
 %% ITERATE
@@ -130,6 +135,7 @@ while true
         % add sample and sample location to GP train points and train means
         % recompute the GP
         % visualize new GP
+        % update the probability of explore / exploit
     end
     
     % update environment iteration tracker

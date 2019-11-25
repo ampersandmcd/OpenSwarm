@@ -334,12 +334,110 @@ classdef HILGPC_Data < handle
         
         function ComputeCentroids(obj)
             % test helper methods
-            positions = obj.PositionsToMatrix();
-            map = obj.MatrixToPositions(positions);
+            %positions = obj.PositionsToMatrix();
+            %map = obj.MatrixToPositions(positions);
             % Given TestPoints and TestMeans taken as the demand function,
             % computes weighted voronoi partition of field given robot
-            % positions specified by environment.Positions and sets
+            % positions specified by environment. Positions and sets
             % Centroids member variable accordingly
+            
+            % FOR TESTING
+            positions = [0,0;1000,0;500,700];
+            
+            % Step 1: Normalize mean function prior to mapping to
+            % uniform-density cartogram
+            f_minimum = min(obj.TestMeans);
+            f_maximum = max(obj.TestMeans);
+            f_normalized = (obj.TestMeans - f_minimum) ./ (f_maximum - f_minimum);
+            
+            % Step 2: Map (x,y) points of field by diffeomorphism to
+            % alternate field in which f is of uniform density using a
+            % cartogram
+            cartogram_points = zeros(size(obj.TestPoints));
+            
+            for i = 1:size(cartogram_points, 1)
+                % get x and y point of this iteration
+                xi = obj.TestPoints(i, 1);
+                yi = obj.TestPoints(i, 2);
+                
+                % determine x shift
+                %
+                % fix yi and get all means from points left of this xi
+                selection = and(obj.TestPoints(:,1) <= xi, obj.TestPoints(:,2) == yi);
+                left_means = f_normalized(selection);
+                
+                % fix yi and get all means from points right of this xi
+                selection = and(obj.TestPoints(:,1) >= xi, obj.TestPoints(:,2) == yi);
+                right_means = f_normalized(selection);
+                
+                % compute x shift by taking numerical integral under the
+                % one dimensional conditional distribution along xi for 
+                % fixed yi and comparing integral left of xi to right of xi
+                %
+                % if integral left of xi is greater, shift point right
+                % if integral right of xi is greater, shift point left
+                % overall, this will "flatten" the distribution
+                left_integral = simpsons(left_means, 0, xi, []);    % integrate 0 -> xi
+                right_integral = simpsons(right_means, xi, obj.Environment.XAxisSize, []); % integrate xi -> max_x
+                x_shift = left_integral - right_integral;
+                
+                %%%%%%                
+                
+                % determine y shift
+                %
+                % fix xi and get all means from points below this yi
+                selection = and(obj.TestPoints(:,2) <= yi, obj.TestPoints(:,1) == xi);
+                bottom_means = f_normalized(selection);
+                
+                % fix xi and get all means from points above of this yi
+                selection = and(obj.TestPoints(:,2) >= yi, obj.TestPoints(:,1) == xi);
+                top_means = f_normalized(selection);
+                
+                % compute y shift by taking numerical integral under the
+                % one dimensional conditional distribution along yi for 
+                % fixed xi and comparing integral above yi to below yi
+                %
+                % if integral below yi is greater, shift point up
+                % if integral above yi is greater, shift point down
+                % overall, this will "flatten" the distribution
+                bottom_integral = simpsons(bottom_means, 0, yi, []);    % integrate 0 -> yi
+                top_integral = simpsons(top_means, yi, obj.Environment.YAxisSize, []); % integrate yi -> max_y
+                y_shift = bottom_integral - top_integral;
+                
+                %%%%%%
+                
+                % assign shifted points to cartogram_points
+                new_xi = xi + x_shift;
+                new_yi = yi + y_shift;
+                cartogram_points(i, 1:2) = [new_xi, new_yi];
+            end
+            
+            % Step 3: Compute boundary / corners of cartogram mapping
+            corner_indices = boundary(cartogram_points);
+            corners = cartogram_points(corner_indices, :);
+            
+            % Step 4: Compute voronoi centroids on cartogram mapping:
+            % snap current positions to nearest neighbor in test points and
+            % map to cartogrammed location of test point
+            starting_indices = knnsearch(obj.TestPoints, positions);
+            starting_positions = cartogram_points(starting_indices, :);
+            px = starting_positions(:,1);
+            py = starting_positions(:,2);
+            
+            numIterations = 1;    % only converge to centroids 1x in simulation
+            visualize = false;
+            [new_px, new_py] = LloydsAlgorithm(px, py, corners, numIterations, visualize);
+            cartogram_centroids = [new_px, new_py];
+            
+            % Step 5: Invert mapping on centroids by taking the original
+            % positions of the nearest neighbor of each centroid point
+            % within the cartogram
+            centroid_indices = knnsearch(cartogram_points, cartogram_centroids);
+            centroids = obj.TestPoints(centroid_indices, :);
+            
+            disp("endtest");
+            
+            
         end
         
         function VisualizeCentroids(obj)
