@@ -14,19 +14,24 @@ classdef Vision < handle
         ColorImage;     % stores latest Color image
         BWImage;        % stores latest BW image
         Updated;        % indicates whether positions were properly updated on most recent UpdatePositions() call
+        Transformation; % stores transformation matrix to flatten image
+        Bounds;         % stores bounds to crop transformed image to
     
     end
     
     methods
-        function obj = Vision(inputEnvironment, inputPlotter)
+        function obj = Vision(inputEnvironment, inputPlotter, transformation, bounds)
             %Vision: 
             %   Construct and configure a vision object
             
             obj.Environment = inputEnvironment;
             obj.Plotter = inputPlotter;
             obj.Updated = false;
+            obj.Transformation = transformation;
+            obj.Bounds = bounds;
             obj = obj.StartCamera();
             obj = obj.PurgeCamera();
+            
         end
         
         function obj = StartCamera(obj)
@@ -47,6 +52,13 @@ classdef Vision < handle
             obj.AnchorSize = obj.GetAnchorSize();
         end
         
+        function img = TransformedImage(obj)
+            raw = getsnapshot(obj.Camera);
+            flipped = flip(raw, 1);
+            flat = imwarp(flipped, obj.Transformation);
+            img = imcrop(flat, obj.Bounds);
+        end
+        
         function obj = PurgeCamera(obj)
            %PurgeCamera: Take series of images to ensure autofocus is 
            %    functioning properly
@@ -58,7 +70,7 @@ classdef Vision < handle
             %GetColorImage: 
             %   Takes and plots color image with environment camera
             
-            obj.ColorImage = getsnapshot(obj.Camera);
+            obj.ColorImage = obj.TransformedImage();
             obj.Plotter = obj.Plotter.PlotColorImage(obj.ColorImage);
         end
         
@@ -316,7 +328,7 @@ classdef Vision < handle
             %   Determine optimal black/white cutoff
             %   threshold to properly deduce locations of robot visual anchors
             
-            threshold = 0.95;
+            threshold = 0.8;
             %TODO: actually implement auto-set algorithm
         end
         

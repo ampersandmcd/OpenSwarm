@@ -22,7 +22,7 @@ classdef Environment < handle
     end
     
     methods
-        function obj = Environment(inputNumRobots)
+        function obj = Environment(inputNumRobots, bounds)
             %Environment:
             %   Construct an environment object
                                     
@@ -36,11 +36,11 @@ classdef Environment < handle
             
             % Populate NumRobots from constructor input
             obj.NumRobots = inputNumRobots;
+            obj.XAxisSize = round(bounds(3));
+            obj.YAxisSize = round(bounds(4));
             
             % Manually populate other configuration settings below:
             obj.AnchorsPerRobot = 3;
-            obj.XAxisSize = 1024;
-            obj.YAxisSize = 768;
             obj.Iteration = 1;      
             obj.UDPTransmission = true;
             obj.UDPReception = false;
