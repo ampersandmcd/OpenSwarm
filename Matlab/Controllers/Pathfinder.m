@@ -4,13 +4,13 @@
 
 
 % initialize environment settings
-environment = Environment(3);
+environment = Environment(2, bounds);
 
 % initialize plot helper object
 plotter = Plotter(environment);
 
 % initialize webcam tracking and purge autofocus
-vision = Vision(environment, plotter);
+vision = Vision(environment, plotter, transformation, bounds);
 
 % initialize targets and navigation
 navigator = Navigator(environment, plotter);

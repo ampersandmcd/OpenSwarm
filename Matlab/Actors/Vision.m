@@ -54,8 +54,7 @@ classdef Vision < handle
         
         function img = TransformedImage(obj)
             raw = getsnapshot(obj.Camera);
-            flipped = flip(raw, 1);
-            flat = imwarp(flipped, obj.Transformation);
+            flat = imwarp(raw, obj.Transformation);
             img = imcrop(flat, obj.Bounds);
         end
         
@@ -217,8 +216,8 @@ classdef Vision < handle
             % NOTE: must VERTICALLY FLIP BWImage before finding blobs due
             % to [row, column] vs. [x, y] notation; row in BW / logical
             % matrix is opposite of y value (low y = high row #)
-            flippedBW = flip(obj.BWImage, 1);    % flip on dimension 1
-            [anchorBlobs, numBlobs] = bwlabel(flippedBW);
+%             flippedBW = flip(obj.BWImage, 1);    % flip on dimension 1
+            [anchorBlobs, numBlobs] = bwlabel(obj.BWImage);
             
             % check that proper number of blobs were found
             Utils.Verify(numBlobs == obj.Environment.NumRobots * obj.Environment.AnchorsPerRobot, Utils.InvalidAnchorCountMessage);
@@ -336,7 +335,7 @@ classdef Vision < handle
            %GetAnchorSize: Determine optimal anchor size to properly deduce
            %    locations of robot visual anchors 
            
-           anchorSize = 10;
+           anchorSize = 12;
            %TODO: actually implement auto-set algorithm
         end
     end

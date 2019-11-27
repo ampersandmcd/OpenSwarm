@@ -8,13 +8,13 @@
 %% SETUP: OpenSwarm depenencies
 
 % initialize environment settings
-environment = Environment(3);
+environment = Environment(3, bounds);
 
 % initialize plot helper object
 plotter = Plotter(environment);
 
 % initialize webcam tracking and purge autofocus
-vision = Vision(environment, plotter);
+vision = Vision(environment, plotter, transformation, bounds);
 
 % initialize navigation
 navigator = Navigator(environment, plotter);
@@ -35,7 +35,7 @@ rng(100);
 % configure HILGPC settings
 s2_threshold = 0; % parameter does not apply in this algorithm - only in Threshold algorithm
 recycle_human_prior = true;
-human_prior_filename = "prior1_confidence1.0.csv";
+human_prior_filename = "../Data/prior1_confidence1.0.csv";
 hilgpc_settings = HILGPC_Settings(s2_threshold, recycle_human_prior, human_prior_filename);
 
 % create HILGPC data object

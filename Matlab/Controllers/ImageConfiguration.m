@@ -5,13 +5,12 @@ triggerconfig(camera, 'manual');
 start(camera);
 
 % display current snapshot of field
-raw = getsnapshot(camera);
-img = flip(raw, 1);
+img = getsnapshot(camera);
+figure;
 imshow(img);
 title("Click corners of test field in counterclockwise order, beginning from the bottom left");
 hold on;
 axis on;
-axis xy;
 
 % take user input on corners of image
 ccwInput = zeros(4,2);
@@ -22,10 +21,10 @@ for i = 1:4
 end
 
 % configure fixed points of transformation
-bl = [0,0];
-br = [size(img, 2), 0];
-tr = [size(img, 2), size(img, 1)];
-tl = [0, size(img, 1)];
+bl = [min(ccwInput(:, 1)), min(ccwInput(:, 2))];
+br = [max(ccwInput(:, 1)), min(ccwInput(:, 2))];
+tr = [max(ccwInput(:, 1)), max(ccwInput(:, 2))];
+tl = [min(ccwInput(:, 1)), max(ccwInput(:, 2))];
 ccwFixed = [bl; br; tr; tl];
 
 % apply transformation

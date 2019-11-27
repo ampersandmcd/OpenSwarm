@@ -25,31 +25,31 @@ classdef Navigator < handle
         end
         
         function haltDirections = GetHaltDirections(obj)
-           %GetHaltDirections:
-           %    Return directions map<str(ID), burst> with all bursts
-           %    set to speed=angle=0
-           haltDirections = containers.Map;
-           halt = Burst(0,0);
-           
-           for i = 1:obj.Environment.NumRobots
-               haltDirections(num2str(i)) = halt;
-           end
+            %GetHaltDirections:
+            %    Return directions map<str(ID), burst> with all bursts
+            %    set to speed=angle=0
+            haltDirections = containers.Map;
+            halt = Burst(0,0);
+            
+            for i = 1:obj.Environment.NumRobots
+                haltDirections(num2str(i)) = halt;
+            end
         end
         
         function homeTargets = GetHomeTargets(obj)
-           %GetHomeDirections:
-           %    Set target of robot i to (i * XAxisSize / (NumRobots + 1), YAxisSize / 5) 
-           %    and return map<str(int), position> of such targets
-           
-           homeTargets = containers.Map;
-           
-           for i = 1:obj.Environment.NumRobots
-               homeX = (i * obj.Environment.XAxisSize) / (obj.Environment.NumRobots + 1);
-               homeY = obj.Environment.YAxisSize / 5;
-               homePosition = Position.TargetPosition(homeX, homeY);
-               homeTargets(num2str(i)) = homePosition;
-           end
-           
+            %GetHomeDirections:
+            %    Set target of robot i to (i * XAxisSize / (NumRobots + 1), YAxisSize / 5)
+            %    and return map<str(int), position> of such targets
+            
+            homeTargets = containers.Map;
+            
+            for i = 1:obj.Environment.NumRobots
+                homeX = (i * obj.Environment.XAxisSize) / (obj.Environment.NumRobots + 1);
+                homeY = obj.Environment.YAxisSize / 5;
+                homePosition = Position.TargetPosition(homeX, homeY);
+                homeTargets(num2str(i)) = homePosition;
+            end
+            
         end
         
         function obj = UpdateTargets(obj)
@@ -74,46 +74,47 @@ classdef Navigator < handle
             %   Given Environment.Positions and Environment.Targets,
             %   create and return a map<str(idnum), Burst> containing
             %   burst directions to send to each robot with index idnum
-            
-            directions = containers.Map;
-            
-            for i = 1:obj.Environment.NumRobots
-               % access current position and target from global map
-               position = obj.Environment.Positions(num2str(i));
-               target = obj.Environment.Targets(num2str(i));
-               
-               % determine necessary turn angle
-               % note: CCW is +, CW is -
-               dx = target.Center.X - position.Center.X;
-               dy = target.Center.Y - position.Center.Y;
-               
-               targetAngle = Utils.ArctanInDegrees(dx, dy);
-               currentAngle = position.Heading;
-               turnAngle = targetAngle - currentAngle;
-               
-               % adjust turnAngle if necessary to be within [-180, 180]
-               if turnAngle > 180
-                   turnAngle = turnAngle - 360; 
-               elseif turnAngle < -180
-                   turnAngle = turnAngle + 360;
-               end
-               
-               % determine necessary Burst speed
-               distance = position.Center.Distance(target.Center);
-               
-               if distance < obj.Environment.ConvergenceThreshold
-                   speed = 0;
-               elseif distance > obj.Environment.FullSpeedThreshold
-                   speed = 150;
-               else
-                   speed = 50*(distance - obj.Environment.ConvergenceThreshold)/(obj.Environment.FullSpeedThreshold - obj.Environment.ConvergenceThreshold) + 100;
-               end
-               
-               % construct and save Burst object in directions map
-               burst = Burst(speed, turnAngle);
-               directions(num2str(i)) = burst; 
+            try
+                directions = containers.Map;
+                
+                for i = 1:obj.Environment.NumRobots
+                    % access current position and target from global map
+                    position = obj.Environment.Positions(num2str(i));
+                    target = obj.Environment.Targets(num2str(i));
+                    
+                    % determine necessary turn angle
+                    % note: CCW is +, CW is -
+                    dx = target.Center.X - position.Center.X;
+                    dy = target.Center.Y - position.Center.Y;
+                    
+                    targetAngle = Utils.ArctanInDegrees(dx, dy);
+                    currentAngle = position.Heading;
+                    turnAngle = targetAngle - currentAngle;
+                    
+                    % adjust turnAngle if necessary to be within [-180, 180]
+                    if turnAngle > 180
+                        turnAngle = turnAngle - 360;
+                    elseif turnAngle < -180
+                        turnAngle = turnAngle + 360;
+                    end
+                    
+                    % determine necessary Burst speed
+                    distance = position.Center.Distance(target.Center);
+                    
+                    if distance < obj.Environment.ConvergenceThreshold
+                        speed = 0;
+                    elseif distance > obj.Environment.FullSpeedThreshold
+                        speed = 100;
+                    else
+                        speed = 50*(distance - obj.Environment.ConvergenceThreshold)/(obj.Environment.FullSpeedThreshold - obj.Environment.ConvergenceThreshold) + 100;
+                    end
+                    
+                    % construct and save Burst object in directions map
+                    burst = Burst(speed, turnAngle);
+                    directions(num2str(i)) = burst;
+                end
+            catch
             end
-            
             % returns completed directions map
         end
         
@@ -122,21 +123,25 @@ classdef Navigator < handle
             %   Check to see if all robots are within Environment.ConvergenceThreshold
             %   of their current target point.
             %   Return true if so; else, return false
-            
-            isConverged = true;
-            
-            for i = 1:obj.Environment.NumRobots
-               % access current position and target from global map
-               position = obj.Environment.Positions(num2str(i));
-               target = obj.Environment.Targets(num2str(i));
-               
-               distance = position.Center.Distance(target.Center);
-               
-               if distance > obj.Environment.ConvergenceThreshold
-                   % robot i is not converged; return false on break
-                   isConverged = false;
-                   return;
-               end
+            try
+                isConverged = true;
+                
+                for i = 1:obj.Environment.NumRobots
+                    % access current position and target from global map
+                    position = obj.Environment.Positions(num2str(i));
+                    target = obj.Environment.Targets(num2str(i));
+                    
+                    distance = position.Center.Distance(target.Center);
+                    
+                    if distance > obj.Environment.ConvergenceThreshold
+                        % robot i is not converged; return false on break
+                        isConverged = false;
+                        return;
+                    end
+                end
+            catch
+                isConverged = false;
+                return;
             end
         end
         
@@ -148,7 +153,7 @@ classdef Navigator < handle
             %
             %   CSV should contain NumRobots rows and 2*NumTargets columns
             %   Row i should specify a series of (x,y) targets for robot i
-            %   as follows: 
+            %   as follows:
             %       (x1,y1) are entries in (rowicol1, rowicol2),
             %       (x2,y2) are entries in (rowicol3, rowicol4), etc.
             
@@ -192,7 +197,7 @@ classdef Navigator < handle
             % to end of targetQueue
             if obj.Environment.GoHome
                 homeIdx = numel(targetQueue) + 1;
-                homeTargets = obj.GetHomeTargets(); 
+                homeTargets = obj.GetHomeTargets();
                 targetQueue{homeIdx} = homeTargets;
             end
             

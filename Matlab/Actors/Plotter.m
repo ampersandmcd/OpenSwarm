@@ -79,6 +79,7 @@ classdef Plotter < handle
             imshow(img, 'Parent', obj.ColorImageAxes);
             title(obj.ColorImageAxes, 'Webcam: Color');
             obj.ColorImageAxes.Visible = 'off';
+            axis(obj.ColorImageAxes, 'xy');
         end
         
         function obj = PlotBWImage(obj, img)
@@ -86,6 +87,7 @@ classdef Plotter < handle
             imshow(img, 'Parent', obj.BWImageAxes);
             title(obj.BWImageAxes, 'Webcam: BW');
             obj.BWImageAxes.Visible = 'off';
+            axis(obj.BWImageAxes, 'xy');
         end
         
         function obj = PlotPositions(obj)
@@ -93,36 +95,40 @@ classdef Plotter < handle
             %   Plot current positions from Environment.Positions map.
             %   Plot target positions from Environment.Targets map.
             
-            % clean up
-            hold(obj.LocationAxes, 'off');
-            cla(obj.LocationAxes);
-            hold(obj.LocationAxes, 'on');
-            
-            % for each robot and its target in the positions map, plot and label
-            for i = 1:obj.Environment.NumRobots
-                position = obj.Environment.Positions(num2str(i));
-%                 target = obj.Environment.Targets(num2str(i));
+            try
+                % clean up
+                hold(obj.LocationAxes, 'off');
+                cla(obj.LocationAxes);
+                hold(obj.LocationAxes, 'on');
                 
-                % plot and label position, heading, (x,y) coords:
-                scatter(obj.LocationAxes, position.Center.X, position.Center.Y, obj.DotSize, obj.PositionColor);
-                quiver(obj.LocationAxes, position.Center.X, position.Center.Y, (position.Nose.X - position.Center.X) * obj.HeadingScalar, (position.Nose.Y - position.Center.Y) * obj.HeadingScalar, 'Color', obj.HeadingColor);
-                message = sprintf('%0.0f\n(%0.0f, %0.0f)\n%0.0f°', i, position.Center.X, position.Center.Y, position.Heading);
-                text(obj.LocationAxes, (position.Center.X + obj.XLabelOffset), (position.Center.Y + obj.YLabelOffset), message, 'Color', obj.PositionTextColor)
+                % for each robot and its target in the positions map, plot and label
+                for i = 1:obj.Environment.NumRobots
+                    position = obj.Environment.Positions(num2str(i));
+                    target = obj.Environment.Targets(num2str(i));
+                    
+                    % plot and label position, heading, (x,y) coords:
+                    scatter(obj.LocationAxes, position.Center.X, position.Center.Y, obj.DotSize, obj.PositionColor);
+                    quiver(obj.LocationAxes, position.Center.X, position.Center.Y, (position.Nose.X - position.Center.X) * obj.HeadingScalar, (position.Nose.Y - position.Center.Y) * obj.HeadingScalar, 'Color', obj.HeadingColor);
+                    message = sprintf('%0.0f\n(%0.0f, %0.0f)\n%0.0f°', i, position.Center.X, position.Center.Y, position.Heading);
+                    text(obj.LocationAxes, (position.Center.X + obj.XLabelOffset), (position.Center.Y + obj.YLabelOffset), message, 'Color', obj.PositionTextColor)
+                    
+                    % plot and label heading from center through nose point
+                    text(obj.LocationAxes, (position.Center.X - obj.XLabelOffset), (position.Center.Y - obj.YLabelOffset), num2str(position.Heading), 'Color', obj.HeadingTextColor)
+                    
+                    % plot and label target
+                    scatter(obj.LocationAxes, target.Center.X, target.Center.Y, obj.DotSize, obj.TargetColor);
+                    text(obj.LocationAxes, (target.Center.X + obj.XLabelOffset), (target.Center.Y + obj.YLabelOffset), num2str(i), 'Color', obj.TargetTextColor)
+                    
+                end
                 
-                % plot and label heading from center through nose point
-                %text(obj.LocationAxes, (position.Center.X - obj.XLabelOffset), (position.Center.Y - obj.YLabelOffset), num2str(position.Heading), 'Color', obj.HeadingTextColor)
-
-                % plot and label target
-%                 scatter(obj.LocationAxes, target.Center.X, target.Center.Y, obj.DotSize, obj.TargetColor);
-%                 text(obj.LocationAxes, (target.Center.X + obj.XLabelOffset), (target.Center.Y + obj.YLabelOffset), num2str(i), 'Color', obj.TargetTextColor)
+                % set axis scale, aspect ratio, and title
+                axis(obj.LocationAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
+                obj.LocationAxes.DataAspectRatio = [1,1,1];
+                title(obj.LocationAxes, 'Robot Locations');
                 
+            catch
             end
-            
-            % set axis scale, aspect ratio, and title
-            axis(obj.LocationAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
-            obj.LocationAxes.DataAspectRatio = [1,1,1];
-            title(obj.LocationAxes, 'Robot Locations');
-            
+                
         end
     end
 end
