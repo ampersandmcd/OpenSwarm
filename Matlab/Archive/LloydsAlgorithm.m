@@ -17,7 +17,6 @@ function [Px, Py] = LloydsAlgorithm(Px,Py, crs, numIterations, showPlot)
 %lloydsAlgorithm(0.01*rand(50,1),zeros(50,1)+1/2, [0,0;0,1;1,1;1,0], 200, true)
 %
 % Made by: Aaron Becker, atbecker@uh.edu
-close all
 format compact
 
 % initialize random generator in repeatable fashion

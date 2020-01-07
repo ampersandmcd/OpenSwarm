@@ -7,7 +7,7 @@ classdef Plotter < handle
         LocationAxes;       % axes on which to plot robot locations
         ColorImageAxes;     % axes on which to show current color image
         BWImageAxes;        % axes on which to show current bw image
-        LightmapAxes;       % axes on which to show current lightmap
+        AuxiliaryAxes;      % auxiliary axes
         
         XLabelOffset;       % x-offset distance for labels on plots
         YLabelOffset;       % y-offset distance for labels on plots
@@ -69,9 +69,9 @@ classdef Plotter < handle
             
             subplot(2,2,4);
             title('Auxiliary');
-            obj.LightmapAxes = gca();
-            obj.LightmapAxes.DataAspectRatio = [1,1,1];
-            axis(obj.LightmapAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
+            obj.AuxiliaryAxes = gca();
+            obj.AuxiliaryAxes.DataAspectRatio = [1,1,1];
+            axis(obj.AuxiliaryAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
         end
         
         function obj = PlotColorImage(obj, img)

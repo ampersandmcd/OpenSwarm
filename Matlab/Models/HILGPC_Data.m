@@ -9,6 +9,7 @@ classdef HILGPC_Data < handle
         % Dependencies
         Environment     % OpenSwarm environment object
         Settings        % HILGPC_Settings dependency
+        Plotter         % Plotting dependency
         
         % Human-input data
         InputPoints     % n rows by 2 col of human-input (x,y) points
@@ -45,12 +46,13 @@ classdef HILGPC_Data < handle
     end
     
     methods
-        function obj = HILGPC_Data(environment, hilgpc_settings)
+        function obj = HILGPC_Data(environment, plotter, hilgpc_settings)
             % HILGPC_DATA
             %    Set environment dependency and generate test points
             
             % set dependencies
             obj.Environment = environment;
+            obj.Plotter = plotter;
             obj.Settings = hilgpc_settings;
             
             % generate test points
@@ -249,9 +251,16 @@ classdef HILGPC_Data < handle
             % truth of human
             scatter3(obj.TrainPoints(:,1) , obj.TrainPoints(:,2), obj.TrainMeans(:,1), 'magenta', 'filled');
             
-            % scatter points-to-sample in green
+            % scatter points-to-sample in blue
             if size(obj.SamplePoints, 1) > 0
                 scatter3(obj.SamplePoints(:,1) , obj.SamplePoints(:,2), obj.SampleMeans(:,1), 'blue', 'filled');
+                legend_text = ["Human-input ground truth", ...
+                "Gaussian-shifted train points to account for confidence", ...
+                "Points to sample", "Mean", "Lower CI-95", "Upper CI-95"];
+            else
+                legend_text = ["Human-input ground truth", ...
+                "Gaussian-shifted train points to account for confidence", ...
+                "Mean", "Lower CI-95", "Upper CI-95"];
             end
             
             % mesh GP surface
@@ -267,10 +276,7 @@ classdef HILGPC_Data < handle
             mesh(plotX, plotY, reshape(upper_bound, size(plotX, 1), []), 'FaceColor', [1,0.5,0], 'EdgeColor', 'red', 'FaceAlpha', 0.3);
         
             title(sprintf("Estimated Function with Sample Points\n(s2 threshold = %f)", obj.Settings.S2Threshold));
-            legend(["Human-input ground truth", ...
-                "Gaussian-shifted train points to account for confidence", ...
-                "Points to sample", "Mean", "Lower CI-95", "Upper CI-95"], ...
-                'Location', 'Northeast');
+            legend(legend_text, 'Location', 'Northeast');
             
             view(3)
         end
@@ -342,7 +348,10 @@ classdef HILGPC_Data < handle
             % Centroids member variable accordingly
             
             % FOR TESTING
-            positions = [0,0;1000,0;500,700];
+            % positions = [0,0;1000,0;500,700];
+            
+            % get current robot positions
+            positions = obj.PositionsToMatrix;
             
             % Step 1: Normalize mean function prior to mapping to
             % uniform-density cartogram
@@ -412,9 +421,18 @@ classdef HILGPC_Data < handle
                 cartogram_points(i, 1:2) = [new_xi, new_yi];
             end
             
+            % Visualize cartogram on auxiliary axes
+            ax = obj.Plotter.AuxiliaryAxes;
+            hold(ax, 'off');
+            scatter(ax, cartogram_points(:,1), cartogram_points(:,2), 1, 'black', 'filled');
+            
             % Step 3: Compute boundary / corners of cartogram mapping
             corner_indices = boundary(cartogram_points);
             corners = cartogram_points(corner_indices, :);
+            
+            % Visualize cartogram boundary on auxiliary axes
+            hold(ax, 'on');
+            scatter(ax, corners(:,1), corners(:,2), 5, 'red', 'filled');
             
             % Step 4: Compute voronoi centroids on cartogram mapping:
             % snap current positions to nearest neighbor in test points and
@@ -429,20 +447,30 @@ classdef HILGPC_Data < handle
             [new_px, new_py] = LloydsAlgorithm(px, py, corners, numIterations, visualize);
             cartogram_centroids = [new_px, new_py];
             
+            % Visualize cartogram centroids
+            scatter(ax, cartogram_centroids(:,1), cartogram_centroids(:,2), 10, 'red', 'filled');
+            
             % Step 5: Invert mapping on centroids by taking the original
             % positions of the nearest neighbor of each centroid point
             % within the cartogram
             centroid_indices = knnsearch(cartogram_points, cartogram_centroids);
             centroids = obj.TestPoints(centroid_indices, :);
             
-            disp("endtest");
+            % Visualize inverted centroids and original field boundary
+            scatter(ax, centroids(:,1), centroids(:,2), 10, 'blue', 'filled');
+            rect = polyshape([0, obj.Environment.XAxisSize, obj.Environment.XAxisSize, 0], [0, 0, obj.Environment.YAxisSize, obj.Environment.YAxisSize]); 
+            plot(ax, rect, 'FaceAlpha', 0, 'EdgeColor', 'blue');
+            
+            % Rescale axes and set title
+            title(ax, 'Cartogram');
+            ax.DataAspectRatio = [1,1,1];
             
             
-        end
-        
-        function VisualizeCentroids(obj)
-            % Plots Centroids member variable after ComputeCentroids is
-            % called
+            % Step 6: Set CentroidsMatrix and Centroids fields with helper
+            % method
+            obj.CentroidsMatrix = centroids;
+            obj.Centroids = obj.MatrixToPositions(centroids);          
+            
         end
         
         function ComputeCellMaxU(obj)
@@ -455,11 +483,7 @@ classdef HILGPC_Data < handle
             % uncertainty-maximizing point within each cell, and sets MaxU
             % member variable accordingly
         end
-        
-        function VisualizeCellMaxU(obj)
-            % Plots MaxU member variable after ComputeCellMaxU is called
-        end
-        
+       
         function mat = PositionsToMatrix(obj)
            % Helper function to convert environment.Positions map to a simple
            % nRobots x 2 matrix of x,y positions

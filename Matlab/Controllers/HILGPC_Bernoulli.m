@@ -8,7 +8,7 @@
 %% SETUP: OpenSwarm depenencies
 
 % initialize environment settings
-environment = Environment(3, bounds);
+environment = Environment(2, bounds);
 
 % initialize plot helper object
 plotter = Plotter(environment);
@@ -35,11 +35,11 @@ rng(100);
 % configure HILGPC settings
 s2_threshold = 0; % parameter does not apply in this algorithm - only in Threshold algorithm
 recycle_human_prior = true;
-human_prior_filename = "../Data/prior1_confidence1.0.csv";
+human_prior_filename = "../Data/prior1_confidence0.8.csv";
 hilgpc_settings = HILGPC_Settings(s2_threshold, recycle_human_prior, human_prior_filename);
 
 % create HILGPC data object
-hilgpc_data = HILGPC_Data(environment, hilgpc_settings);
+hilgpc_data = HILGPC_Data(environment, plotter, hilgpc_settings);
 
 % create HILGPC actors
 hilgpc_planner = HILGPC_Planner(environment, hilgpc_settings, hilgpc_data);
@@ -67,12 +67,6 @@ k = 1; % tuning parameter greater than 0
 prob_exploit = exp(-k * max_u);
 
 
-
-% testing
-positions = [0,0;1000,0;500,700];
-hilgpc_data.ComputeCentroids();
-
-
 %% ITERATE
 
 
@@ -90,11 +84,17 @@ while true
     % and 0 => exploration step
     exploit = binornd(1, prob_exploit);
     
+    
+    % force test
+    %
+    exploit = true;
+    %
+    %
+    
     if exploit
         % conduct one iteration of Lloyd's Algorithm
         % (exploit)
         hilgpc_data.ComputeCentroids();
-        hilgpc_data.VisualizeCentroids();
         targets = hilgpc_data.Centroids;
         environment.Targets = targets;
         
@@ -102,7 +102,6 @@ while true
         % conduct max-uncertainty sample within Voronoi partitions
         % (explore)
         hilgpc_data.ComputeCellMaxU();
-        hilgpc_data.VisualizeCellMaxU();
         targets = hilgpc_data.MaxU;
         environment.Targets = targets;
         
