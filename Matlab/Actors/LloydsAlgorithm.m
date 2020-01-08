@@ -1,8 +1,8 @@
 function [Px, Py] = LloydsAlgorithm(Px,Py, crs, numIterations, showPlot)
-% LLOYDSALGORITHM runs Lloyd's algorithm on the particles at xy positions 
+% LLOYDSALGORITHM runs Lloyd's algorithm on the particles at xy positions
 % (Px,Py) within the boundary polygon crs for numIterations iterations
-% showPlot = true will display the results graphically.  
-% 
+% showPlot = true will display the results graphically.
+%
 % Lloyd's algorithm starts with an initial distribution of samples or
 % points and consists of repeatedly executing one relaxation step:
 %   1.  The Voronoi diagram of all the points is computed.
@@ -12,7 +12,7 @@ function [Px, Py] = LloydsAlgorithm(Px,Py, crs, numIterations, showPlot)
 % Inspired by http://www.mathworks.com/matlabcentral/fileexchange/34428-voronoilimit
 % Requires the Polybool function of the mapping toolbox to run.
 %
-% Run with no input to see example.  To initialize a square with 50 robots 
+% Run with no input to see example.  To initialize a square with 50 robots
 % in left middle, run:
 %lloydsAlgorithm(0.01*rand(50,1),zeros(50,1)+1/2, [0,0;0,1;1,1;1,0], 200, true)
 %
@@ -31,15 +31,15 @@ if nargin < 1   % demo mode
     xrange = 10;  %region size
     yrange = 5;
     n = 50; %number of robots  (changing the number of robots is interesting)
-
-% Generate and Place  n stationary robots
+    
+    % Generate and Place  n stationary robots
     Px = 0.01*mod(1:n,ceil(sqrt(n)))'*xrange; %start the robots in a small grid
     Py = 0.01*floor((1:n)/sqrt(n))'*yrange;
     
-%     Px = 0.1*rand(n,1)*xrange; % place n  robots randomly
-%     Py = 0.1*rand(n,1)*yrange;
+    %     Px = 0.1*rand(n,1)*xrange; % place n  robots randomly
+    %     Py = 0.1*rand(n,1)*yrange;
     
-    crs = [ 0, 0;    
+    crs = [ 0, 0;
         0, yrange;
         1/3*xrange, yrange;  % a world with a narrow passage
         1/3*xrange, 1/4*yrange;
@@ -48,16 +48,16 @@ if nargin < 1   % demo mode
         xrange, yrange;
         xrange, 0];
     
-    for i = 1:numel(Px)  
+    for i = 1:numel(Px)
         while ~inpolygon(Px(i),Py(i),crs(:,1),crs(:,2))% ensure robots are inside the boundary
-            Px(i) = rand(1,1)*xrange; 
+            Px(i) = rand(1,1)*xrange;
             Py(i) = rand(1,1)*yrange;
         end
     end
 else
     xrange = max(crs(:,1));
     yrange = max(crs(:,2));
-    n = numel(Px); %number of robots  
+    n = numel(Px); %number of robots
 end
 
 
@@ -69,11 +69,11 @@ if showPlot
         verCellHandle(i)  = patch(Px(i),Py(i),cellColors(i,:)); % use color i  -- no robot assigned yet
         hold on
     end
-    pathHandle = zeros(n,1);    
-    %numHandle = zeros(n,1);    
+    pathHandle = zeros(n,1);
+    %numHandle = zeros(n,1);
     for i = 1:numel(Px) % color according to
         pathHandle(i)  = plot(Px(i),Py(i),'-','color',cellColors(i,:)*.8);
-    %    numHandle(i) = text(Px(i),Py(i),num2str(i));
+        %    numHandle(i) = text(Px(i),Py(i),num2str(i));
     end
     goalHandle = plot(Px,Py,'+','linewidth',2);
     currHandle = plot(Px,Py,'o','linewidth',2);
@@ -83,7 +83,7 @@ end
 
 % Iteratively Apply LLYOD's Algorithm
 for counter = 1:numIterations
-
+    
     %[v,c]=VoronoiLimit(Px,Py, crs, false);
     [v,c]=VoronoiBounded(Px,Py, crs);
     
@@ -93,8 +93,8 @@ for counter = 1:numIterations
             xD = [get(pathHandle(i),'XData'),Px(i)];
             yD = [get(pathHandle(i),'YData'),Py(i)];
             set(pathHandle(i),'XData',xD,'YData',yD);%plot path position
-     %       set(numHandle(i),'Position',[ Px(i),Py(i)]);
-        end 
+            %       set(numHandle(i),'Position',[ Px(i),Py(i)]);
+        end
     end
     
     for i = 1:numel(c) %calculate the centroid of each cell
@@ -111,19 +111,20 @@ for counter = 1:numIterations
         for i = 1:numel(c) % update Voronoi cells
             set(verCellHandle(i), 'XData',v(c{i},1),'YData',v(c{i},2));
         end
-
+        
         set(titleHandle,'string',['o = Robots, + = Goals, Iteration ', num2str(counter,'%3d')]);
         set(goalHandle,'XData',Px,'YData',Py);%plot goal position
         
         axis equal
         axis([0,xrange,0,yrange]);
         drawnow
-%         if mod(counter,50) ==0
-%             pause
-%             %pause(0.1)
-%         end
+        %         if mod(counter,50) ==0
+        %             pause
+        %             %pause(0.1)
+        %         end
     end
 end
+
 
 function [Cx,Cy] = PolyCentroid(X,Y)
 % POLYCENTROID returns the coordinates for the centroid of polygon with vertices X,Y
@@ -168,36 +169,37 @@ V = vi;
 %Polybool for restriction of polygons to domain.
 
 for ij=1:length(C)
-        % thanks to http://www.mathworks.com/matlabcentral/fileexchange/34428-voronoilimit
-        % first convert the contour coordinate to clockwise order:
-        [X2, Y2] = poly2cw(V(C{ij},1),V(C{ij},2));
-        [xb, yb] = polybool('intersection',crs(:,1),crs(:,2),X2,Y2);
-        ix=nan(1,length(xb));
-        for il=1:length(xb)
-            if any(V(:,1)==xb(il)) && any(V(:,2)==yb(il))
-                ix1=find(V(:,1)==xb(il));
-                ix2=find(V(:,2)==yb(il));
-                for ib=1:length(ix1)
-                    if any(ix1(ib)==ix2)
-                        ix(il)=ix1(ib);
-                    end
+    % thanks to http://www.mathworks.com/matlabcentral/fileexchange/34428-voronoilimit
+    % first convert the contour coordinate to clockwise order:
+    [X2, Y2] = poly2cw(V(C{ij},1),V(C{ij},2));
+    [xb, yb] = polybool('intersection',crs(:,1),crs(:,2),X2,Y2);
+    ix=nan(1,length(xb));
+    for il=1:length(xb)
+        if any(V(:,1)==xb(il)) && any(V(:,2)==yb(il))
+            ix1=find(V(:,1)==xb(il));
+            ix2=find(V(:,2)==yb(il));
+            for ib=1:length(ix1)
+                if any(ix1(ib)==ix2)
+                    ix(il)=ix1(ib);
                 end
-                if isnan(ix(il))==1
-                    lv=length(V);
-                    V(lv+1,1)=xb(il);
-                    V(lv+1,2)=yb(il);
-                    ix(il)=lv+1;
-                end
-            else
+            end
+            if isnan(ix(il))==1
                 lv=length(V);
                 V(lv+1,1)=xb(il);
                 V(lv+1,2)=yb(il);
                 ix(il)=lv+1;
             end
+        else
+            lv=length(V);
+            V(lv+1,1)=xb(il);
+            V(lv+1,2)=yb(il);
+            ix(il)=lv+1;
         end
-        C{ij}=ix;
-   
+    end
+    C{ij}=ix;
+    
 end
+
 
 
 

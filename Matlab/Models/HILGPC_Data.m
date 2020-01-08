@@ -39,8 +39,8 @@ classdef HILGPC_Data < handle
         CentroidsMatrix % simple nRobots x 2 matrix of x,y positions of centroids
         
         % Most recent uncertainty-maximizing positions from weighted voronoi partition
-        MaxU            % map<str(id), Position> of MaxU positions in weighted voronoi cells
-        MaxUMatrix      % simple nRobots x 2 matrix of x,y positions of MaxU points
+        MaxS2            % map<str(id), Position> of max uncertainty positions in weighted voronoi cells
+        MaxS2Matrix      % simple nRobots x 2 matrix of x,y positions of max uncertainty points
         
         % Other relevant GP data
         Hyp             % hyperparameters of GP model
@@ -343,7 +343,7 @@ classdef HILGPC_Data < handle
             % Normalizes the values in TestMeans to between 0 and 1 and
             % stores them in NormalizedTestMeans member variable.
             % Called as a helper function in ComputeCartogram and
-            % ComputeCellMaxU.
+            % ComputeCellMaxS2.
             
             f_minimum = min(obj.TestMeans);
             f_maximum = max(obj.TestMeans);
@@ -355,7 +355,7 @@ classdef HILGPC_Data < handle
            % Given TestPoints and TestMeans taken as the demand function,
            % returns TestPoints mapped to a space of uniform demand
            % density. Used as a helper function in ComputeCentroids and
-           % ComputeCellMaxU
+           % ComputeCellMaxS2
            
            cartogram = zeros(size(obj.TestPoints));
             
@@ -425,7 +425,7 @@ classdef HILGPC_Data < handle
             % Centroids member variable accordingly
             
             % get current robot positions
-            positions = obj.PositionsToMatrix;
+            positions = obj.PositionsToMatrix();
             
             % Step 1: Normalize mean function prior to mapping to
             % uniform-density cartogram
@@ -459,7 +459,7 @@ classdef HILGPC_Data < handle
             
             numIterations = 1;    % only converge to centroids 1x in simulation
             visualize = false;
-            [new_px, new_py] = LloydsAlgorithm(px, py, corners, numIterations, visualize);
+            [new_px, new_py] = Voronoi.LloydsAlgorithm(px, py, corners, numIterations, visualize);
             cartogram_centroids = [new_px, new_py];
             
             % Visualize cartogram centroids
@@ -479,8 +479,7 @@ classdef HILGPC_Data < handle
             % Rescale axes and set title
             title(ax, 'Cartogram');
             ax.DataAspectRatio = [1,1,1];
-            
-            
+                        
             % Step 6: Set CentroidsMatrix and Centroids fields with helper
             % method
             obj.CentroidsMatrix = centroids;
@@ -488,12 +487,99 @@ classdef HILGPC_Data < handle
             
         end
         
-        function ComputeCellMaxU(obj)
+        function ComputeCellMaxS2(obj)
             % Given TestPoints, TestMeans, and TestSD taken as the demand function,
             % computes weighted voronoi partition of field given robot
             % positions specified by environment.Positions, then finds
-            % uncertainty-maximizing point within each cell, and sets MaxU
+            % uncertainty-maximizing point within each cell, and sets MaxS2
             % member variable accordingly
+            
+            % get current robot positions
+            positions = obj.PositionsToMatrix();
+            
+            % Step 1: Normalize mean function prior to mapping to
+            % uniform-density cartogram
+            obj.NormalizeMeans();
+            
+            % Step 2: Map (x,y) points of field by diffeomorphism to
+            % alternate field in which f is of uniform density using
+            % cartogram helper function
+            cartogram = obj.ComputeCartogram();
+            
+            % Visualize cartogram on auxiliary axes
+            ax = obj.Plotter.AuxiliaryAxes;
+            hold(ax, 'off');
+            scatter(ax, cartogram(:,1), cartogram(:,2), 1, 'black', 'filled');
+            
+            % Step 3: Compute boundary / corners of cartogram mapping
+            corner_indices = boundary(cartogram);
+            corners = cartogram(corner_indices, :);
+            
+            % Visualize cartogram boundary on auxiliary axes
+            hold(ax, 'on');
+            scatter(ax, corners(:,1), corners(:,2), 5, 'red', 'filled');
+            
+            % Step 4: Compute voronoi partitions on cartogram mapping:
+            % snap current positions to nearest neighbor in test points and
+            % map to cartogrammed location of test point
+            starting_indices = knnsearch(obj.TestPoints, positions);
+            starting_positions = cartogram(starting_indices, :);
+            px = starting_positions(:,1);
+            py = starting_positions(:,2);
+            
+            [vertices, cells] = Voronoi.VoronoiBounded(px, py, corners);
+            
+            % Step 5: Find uncertainty-maximizing points in each
+            % voronoi partition in the cartogram space and determine
+            % corresponding point in original space to be sampled
+            
+            max_s2_points = zeros(obj.Environment.NumRobots, 2);
+            
+            % visualizations for debugging
+            figure;
+            hold on;
+            
+            for i = 1:obj.Environment.NumRobots
+                
+                % iterate through each voronoi cell polygon and find
+                % uncertainty-maximizing points
+                cell = cells{i};
+                polygon = vertices(cell, :); % subset the vertices of the polygon bounding just this cell
+                
+                % get indices of points in this voronoi cell polygon
+                in_indices = inpolygon(cartogram(:,1), cartogram(:,2), polygon(:,1), polygon(:,2));
+                
+                % get uncertainties of points in this voronoi cell polygon
+                in_s2 = obj.TestS2(in_indices, :);
+                
+                % find max uncertainty of this voronoi cell polygon
+                [max_s2, max_s2_index] = max(in_s2);
+                
+                % store coordinates of this uncertainty-maximizing point
+                % for this cell in the original, non-uniform space
+                max_s2_point = obj.TestPoints(max_s2_index,:);
+                max_s2_points(i, :) = max_s2_point;
+               
+                
+                
+                % Visualizations for debugging
+                pshape = polyshape(polygon(:,1), polygon(:,2));
+                in_points = cartogram(in_indices, :);
+                in_original_points = obj.TestPoints(in_indices, :);
+                
+                plot(pshape);
+                scatter(in_points(:,1), in_points(:,2));
+                scatter(in_original_points(:,1), in_original_points(:,2));
+                scatter(max_s2_point(:,1), max_s2_point(:,2));
+            end
+
+            % Step 6: Set MaxS2Matrix and MaxS2 fields with helper
+            % method
+            obj.MaxS2Matrix = max_s2_points;
+            obj.MaxS2 = obj.MatrixToPositions(max_s2_points);  
+            
+            
+            
         end
        
         function mat = PositionsToMatrix(obj)

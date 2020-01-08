@@ -87,7 +87,7 @@ while true
     
     % force test
     %
-    exploit = true;
+    % exploit = false;
     %
     %
     
@@ -101,8 +101,8 @@ while true
     else
         % conduct max-uncertainty sample within Voronoi partitions
         % (explore)
-        hilgpc_data.ComputeCellMaxU();
-        targets = hilgpc_data.MaxU;
+        hilgpc_data.ComputeCellMaxS2();
+        targets = hilgpc_data.MaxS2;
         environment.Targets = targets;
         
     end
