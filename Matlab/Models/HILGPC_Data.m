@@ -30,6 +30,7 @@ classdef HILGPC_Data < handle
         % Predicted data (used to visualize the GP)
         TestPoints      % n rows by 2 col of (x,y) points to evaluate model
         TestMeans       % n rows output by model
+        NormalizedTestMeans % n rows output by model normalized between 0 and 1
         TestS2          % n rows output by model
         TestFigure      % handle to visualization
         
@@ -338,33 +339,27 @@ classdef HILGPC_Data < handle
             
         end
         
-        function ComputeCentroids(obj)
-            % test helper methods
-            %positions = obj.PositionsToMatrix();
-            %map = obj.MatrixToPositions(positions);
-            % Given TestPoints and TestMeans taken as the demand function,
-            % computes weighted voronoi partition of field given robot
-            % positions specified by environment. Positions and sets
-            % Centroids member variable accordingly
+        function NormalizeMeans(obj)
+            % Normalizes the values in TestMeans to between 0 and 1 and
+            % stores them in NormalizedTestMeans member variable.
+            % Called as a helper function in ComputeCartogram and
+            % ComputeCellMaxU.
             
-            % FOR TESTING
-            % positions = [0,0;1000,0;500,700];
-            
-            % get current robot positions
-            positions = obj.PositionsToMatrix;
-            
-            % Step 1: Normalize mean function prior to mapping to
-            % uniform-density cartogram
             f_minimum = min(obj.TestMeans);
             f_maximum = max(obj.TestMeans);
-            f_normalized = (obj.TestMeans - f_minimum) ./ (f_maximum - f_minimum);
+            obj.NormalizedTestMeans = (obj.TestMeans - f_minimum) ./ (f_maximum - f_minimum);
             
-            % Step 2: Map (x,y) points of field by diffeomorphism to
-            % alternate field in which f is of uniform density using a
-            % cartogram
-            cartogram_points = zeros(size(obj.TestPoints));
+        end
+        
+        function cartogram = ComputeCartogram(obj)
+           % Given TestPoints and TestMeans taken as the demand function,
+           % returns TestPoints mapped to a space of uniform demand
+           % density. Used as a helper function in ComputeCentroids and
+           % ComputeCellMaxU
+           
+           cartogram = zeros(size(obj.TestPoints));
             
-            for i = 1:size(cartogram_points, 1)
+            for i = 1:size(cartogram, 1)
                 % get x and y point of this iteration
                 xi = obj.TestPoints(i, 1);
                 yi = obj.TestPoints(i, 2);
@@ -373,11 +368,11 @@ classdef HILGPC_Data < handle
                 %
                 % fix yi and get all means from points left of this xi
                 selection = and(obj.TestPoints(:,1) <= xi, obj.TestPoints(:,2) == yi);
-                left_means = f_normalized(selection);
+                left_means = obj.NormalizedTestMeans(selection);
                 
                 % fix yi and get all means from points right of this xi
                 selection = and(obj.TestPoints(:,1) >= xi, obj.TestPoints(:,2) == yi);
-                right_means = f_normalized(selection);
+                right_means = obj.NormalizedTestMeans(selection);
                 
                 % compute x shift by taking numerical integral under the
                 % one dimensional conditional distribution along xi for 
@@ -396,11 +391,11 @@ classdef HILGPC_Data < handle
                 %
                 % fix xi and get all means from points below this yi
                 selection = and(obj.TestPoints(:,2) <= yi, obj.TestPoints(:,1) == xi);
-                bottom_means = f_normalized(selection);
+                bottom_means = obj.NormalizedTestMeans(selection);
                 
                 % fix xi and get all means from points above of this yi
                 selection = and(obj.TestPoints(:,2) >= yi, obj.TestPoints(:,1) == xi);
-                top_means = f_normalized(selection);
+                top_means = obj.NormalizedTestMeans(selection);
                 
                 % compute y shift by taking numerical integral under the
                 % one dimensional conditional distribution along yi for 
@@ -418,17 +413,37 @@ classdef HILGPC_Data < handle
                 % assign shifted points to cartogram_points
                 new_xi = xi + x_shift;
                 new_yi = yi + y_shift;
-                cartogram_points(i, 1:2) = [new_xi, new_yi];
+                cartogram(i, 1:2) = [new_xi, new_yi];
             end
+            
+        end
+        
+        function ComputeCentroids(obj)
+            % Given TestPoints and TestMeans taken as the demand function,
+            % computes weighted voronoi partition of field given robot
+            % positions specified by environment. Positions and sets
+            % Centroids member variable accordingly
+            
+            % get current robot positions
+            positions = obj.PositionsToMatrix;
+            
+            % Step 1: Normalize mean function prior to mapping to
+            % uniform-density cartogram
+            obj.NormalizeMeans();
+            
+            % Step 2: Map (x,y) points of field by diffeomorphism to
+            % alternate field in which f is of uniform density using
+            % cartogram helper function
+            cartogram = obj.ComputeCartogram();
             
             % Visualize cartogram on auxiliary axes
             ax = obj.Plotter.AuxiliaryAxes;
             hold(ax, 'off');
-            scatter(ax, cartogram_points(:,1), cartogram_points(:,2), 1, 'black', 'filled');
+            scatter(ax, cartogram(:,1), cartogram(:,2), 1, 'black', 'filled');
             
             % Step 3: Compute boundary / corners of cartogram mapping
-            corner_indices = boundary(cartogram_points);
-            corners = cartogram_points(corner_indices, :);
+            corner_indices = boundary(cartogram);
+            corners = cartogram(corner_indices, :);
             
             % Visualize cartogram boundary on auxiliary axes
             hold(ax, 'on');
@@ -438,7 +453,7 @@ classdef HILGPC_Data < handle
             % snap current positions to nearest neighbor in test points and
             % map to cartogrammed location of test point
             starting_indices = knnsearch(obj.TestPoints, positions);
-            starting_positions = cartogram_points(starting_indices, :);
+            starting_positions = cartogram(starting_indices, :);
             px = starting_positions(:,1);
             py = starting_positions(:,2);
             
@@ -453,7 +468,7 @@ classdef HILGPC_Data < handle
             % Step 5: Invert mapping on centroids by taking the original
             % positions of the nearest neighbor of each centroid point
             % within the cartogram
-            centroid_indices = knnsearch(cartogram_points, cartogram_centroids);
+            centroid_indices = knnsearch(cartogram, cartogram_centroids);
             centroids = obj.TestPoints(centroid_indices, :);
             
             % Visualize inverted centroids and original field boundary
@@ -474,9 +489,6 @@ classdef HILGPC_Data < handle
         end
         
         function ComputeCellMaxU(obj)
-            % test helper methods
-            positions = obj.PositionsToMatrix();
-            map = obj.MatrixToPositions(positions);
             % Given TestPoints, TestMeans, and TestSD taken as the demand function,
             % computes weighted voronoi partition of field given robot
             % positions specified by environment.Positions, then finds
