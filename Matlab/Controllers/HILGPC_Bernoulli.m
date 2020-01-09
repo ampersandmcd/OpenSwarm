@@ -8,7 +8,7 @@
 %% SETUP: OpenSwarm depenencies
 
 % initialize environment settings
-environment = Environment(2, bounds);
+environment = Environment(4, bounds);
 
 % initialize plot helper object
 plotter = Plotter(environment);
@@ -87,7 +87,7 @@ while true
     
     % force test
     %
-    % exploit = false;
+     exploit = true;
     %
     %
     

@@ -106,7 +106,7 @@ classdef Navigator < handle
                     elseif distance > obj.Environment.FullSpeedThreshold
                         speed = 100;
                     else
-                        speed = 50*(distance - obj.Environment.ConvergenceThreshold)/(obj.Environment.FullSpeedThreshold - obj.Environment.ConvergenceThreshold) + 100;
+                        speed = 70;
                     end
                     
                     % construct and save Burst object in directions map

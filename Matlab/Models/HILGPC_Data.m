@@ -477,7 +477,7 @@ classdef HILGPC_Data < handle
             plot(ax, rect, 'FaceAlpha', 0, 'EdgeColor', 'blue');
             
             % Rescale axes and set title
-            title(ax, 'Cartogram');
+            title(ax, 'Exploit: Centroid Step');
             ax.DataAspectRatio = [1,1,1];
                         
             % Step 6: Set CentroidsMatrix and Centroids fields with helper
@@ -572,6 +572,10 @@ classdef HILGPC_Data < handle
                 scatter(in_original_points(:,1), in_original_points(:,2));
                 scatter(max_s2_point(:,1), max_s2_point(:,2));
             end
+            
+            % Rescale axes and set title
+            title(ax, 'Explore: MaxS2 Step');
+            ax.DataAspectRatio = [1,1,1];
 
             % Step 6: Set MaxS2Matrix and MaxS2 fields with helper
             % method
