@@ -21,3 +21,5 @@ For more information about and most recent versions of each dependency, visit th
 ### Matlab
 
 - [Gaussian Processes for Machine Learning (gpml) Library](http://www.gaussianprocess.org/gpml/)
+- [Lloyd's Algorithm Implementation by Aaron Becker](https://www.mathworks.com/matlabcentral/fileexchange/41507-lloydsalgorithm-px-py-crs-numiterations-showplot)
+- [Minimum Enclosing Circle Algorithm Implementation by Yazan Ahed](https://www.mathworks.com/matlabcentral/fileexchange/6457-minimum-enclosing-circle)

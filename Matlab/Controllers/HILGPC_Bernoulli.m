@@ -87,14 +87,14 @@ while true
     
     % force test
     %
-     exploit = false;
+     exploit = true;
     %
     %
     
     if exploit
-        % conduct one iteration of Lloyd's Algorithm
+        % conduct one iteration of Lloyd's Algorithm to circumcenters
         % (exploit)
-        hilgpc_data.ComputeCentroids();
+        hilgpc_data.ComputeCircumcenters();
         targets = hilgpc_data.Centroids;
         environment.Targets = targets;
         

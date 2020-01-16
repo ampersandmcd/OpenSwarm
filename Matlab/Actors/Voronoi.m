@@ -1,17 +1,16 @@
 classdef Voronoi
     %VORONOI Helper class to define voronoi methods, including partitioning
-    % and computation of Lloyd's Algorithm    
+    % and computation of Lloyd's Algorithm
     properties
         
     end
     
     methods(Static)
-        function [Px, Py] = LloydsAlgorithm(Px,Py, crs, numIterations, showPlot)
-            % LLOYDSALGORITHM runs Lloyd's algorithm on the particles at xy positions
+        function [Px, Py] = LloydsAlgorithmCentroids(Px,Py, crs, numIterations)
+            % LLOYDSALGORITHMCENTROID runs Lloyd's algorithm on the particles at xy positions
             % (Px,Py) within the boundary polygon crs for numIterations iterations
-            % showPlot = true will display the results graphically.
             %
-            % Lloyd's algorithm starts with an initial distribution of samples or
+            % Lloyd's algorithm (centroid) starts with an initial distribution of samples or
             % points and consists of repeatedly executing one relaxation step:
             %   1.  The Voronoi diagram of all the points is computed.
             %   2.  Each cell of the Voronoi diagram is integrated and the centroid is computed.
@@ -20,93 +19,21 @@ classdef Voronoi
             % Inspired by http://www.mathworks.com/matlabcentral/fileexchange/34428-voronoilimit
             % Requires the Polybool function of the mapping toolbox to run.
             %
-            % Run with no input to see example.  To initialize a square with 50 robots
-            % in left middle, run:
-            %lloydsAlgorithm(0.01*rand(50,1),zeros(50,1)+1/2, [0,0;0,1;1,1;1,0], 200, true)
-            %
-            % Made by: Aaron Becker, atbecker@uh.edu
-            format compact
+            % Originally sourced from Aaron Becker: https://www.mathworks.com/matlabcentral/fileexchange/41507-lloydsalgorithm-px-py-crs-numiterations-showplot
+            % Modified by Andrew McDonald for use in OpenSwarm
             
-            % initialize random generator in repeatable fashion
-            sd = 20;
-            rng(sd)
-            
-            
-            
-            if nargin < 1   % demo mode
-                showPlot = true;
-                numIterations  = 200;
-                xrange = 10;  %region size
-                yrange = 5;
-                n = 50; %number of robots  (changing the number of robots is interesting)
-                
-                % Generate and Place  n stationary robots
-                Px = 0.01*mod(1:n,ceil(sqrt(n)))'*xrange; %start the robots in a small grid
-                Py = 0.01*floor((1:n)/sqrt(n))'*yrange;
-                
-                %     Px = 0.1*rand(n,1)*xrange; % place n  robots randomly
-                %     Py = 0.1*rand(n,1)*yrange;
-                
-                crs = [ 0, 0;
-                    0, yrange;
-                    1/3*xrange, yrange;  % a world with a narrow passage
-                    1/3*xrange, 1/4*yrange;
-                    2/3*xrange, 1/4*yrange;
-                    2/3*xrange, yrange;
-                    xrange, yrange;
-                    xrange, 0];
-                
-                for i = 1:numel(Px)
-                    while ~inpolygon(Px(i),Py(i),crs(:,1),crs(:,2))% ensure robots are inside the boundary
-                        Px(i) = rand(1,1)*xrange;
-                        Py(i) = rand(1,1)*yrange;
-                    end
-                end
-            else
-                xrange = max(crs(:,1));
-                yrange = max(crs(:,2));
-                n = numel(Px); %number of robots
-            end
-            
-            
-            %%%%%%%%%%%%%%%%%%%%%%%% VISUALIZATION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            if showPlot
-                verCellHandle = zeros(n,1);
-                cellColors = cool(n);
-                for i = 1:numel(Px) % color according to
-                    verCellHandle(i)  = patch(Px(i),Py(i),cellColors(i,:)); % use color i  -- no robot assigned yet
-                    hold on
-                end
-                pathHandle = zeros(n,1);
-                %numHandle = zeros(n,1);
-                for i = 1:numel(Px) % color according to
-                    pathHandle(i)  = plot(Px(i),Py(i),'-','color',cellColors(i,:)*.8);
-                    %    numHandle(i) = text(Px(i),Py(i),num2str(i));
-                end
-                goalHandle = plot(Px,Py,'+','linewidth',2);
-                currHandle = plot(Px,Py,'o','linewidth',2);
-                titleHandle = title(['o = Robots, + = Goals, Iteration ', num2str(0)]);
-            end
-            %%%%%%%%%%%%%%%%%%%%%%%% END VISUALIZATION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % set range
+            xrange = max(crs(:,1));
+            yrange = max(crs(:,2));
+            n = numel(Px); %number of robots
             
             % Iteratively Apply LLYOD's Algorithm
             for counter = 1:numIterations
                 
-                %[v,c]=VoronoiLimit(Px,Py, crs, false);
-                [v,c]=Voronoi.VoronoiBounded(Px,Py, crs);
+                [vertices,cells]=Voronoi.VoronoiBounded(Px,Py, crs);
                 
-                if showPlot
-                    set(currHandle,'XData',Px,'YData',Py);%plot current position
-                    for i = 1:numel(Px) % color according to
-                        xD = [get(pathHandle(i),'XData'),Px(i)];
-                        yD = [get(pathHandle(i),'YData'),Py(i)];
-                        set(pathHandle(i),'XData',xD,'YData',yD);%plot path position
-                        %       set(numHandle(i),'Position',[ Px(i),Py(i)]);
-                    end
-                end
-                
-                for i = 1:numel(c) %calculate the centroid of each cell
-                    [cx,cy] = Voronoi.PolyCentroid(v(c{i},1),v(c{i},2));
+                for i = 1:numel(cells) %calculate the centroid of each cell
+                    [cx,cy] = Voronoi.PolyCentroid(vertices(cells{i},1),vertices(cells{i},2));
                     cx = min(xrange,max(0, cx));
                     cy = min(yrange,max(0, cy));
                     if ~isnan(cx) && inpolygon(cx,cy,crs(:,1),crs(:,2))
@@ -114,31 +41,65 @@ classdef Voronoi
                         Py(i) = cy;
                     end
                 end
+            end
+        end
+        
+        function [Px, Py, R] = LloydsAlgorithmCircumcenters(Px,Py, crs, numIterations)
+            % LLOYDSALGORITHMCIRCUMCENTER runs Lloyd's algorithm on the particles at xy positions
+            % (Px,Py) within the boundary polygon crs for numIterations iterations
+            %
+            % Note: R returns the n x 1 vector of radii of each particle's
+            % minimum bounding circle
+            %
+            % Lloyd's algorithm (circumcenter) starts with an initial distribution of samples or
+            % points and consists of repeatedly executing one relaxation step:
+            %   1.  The Voronoi diagram of all the points is computed.
+            %   2.  Each cell of the Voronoi diagram has its minimum bounding circle computed.
+            %   3.  Each point is then moved to the center of its Voronoi cell's minimum bounding circle.
+            %
+            % Inspired by http://www.mathworks.com/matlabcentral/fileexchange/34428-voronoilimit
+            % Requires the Polybool function of the mapping toolbox to run.
+            %
+            % Originally sourced from Aaron Becker: https://www.mathworks.com/matlabcentral/fileexchange/41507-lloydsalgorithm-px-py-crs-numiterations-showplot
+            % Modified by Andrew McDonald for use in OpenSwarm
+            
+            % set range
+            xrange = max(crs(:,1));
+            yrange = max(crs(:,2));
+            n = numel(Px); %number of robots
+            
+            % Iteratively Apply LLYOD's Algorithm
+            for counter = 1:numIterations
                 
-                if showPlot
-                    for i = 1:numel(c) % update Voronoi cells
-                        set(verCellHandle(i), 'XData',v(c{i},1),'YData',v(c{i},2));
-                    end
+                [vertices,cells]=Voronoi.VoronoiBounded(Px,Py, crs);
+                
+                for i = 1:numel(cells) %calculate the centroid of each cell
                     
-                    set(titleHandle,'string',['o = Robots, + = Goals, Iteration ', num2str(counter,'%3d')]);
-                    set(goalHandle,'XData',Px,'YData',Py);%plot goal position
+                    % Construct an n x 2 matrix of voronoi polygon points
+                    polygon = [vertices(cells{i},1),vertices(cells{i},2)];
                     
-                    axis equal
-                    axis([0,xrange,0,yrange]);
-                    drawnow
-                    %         if mod(counter,50) ==0
-                    %             pause
-                    %             %pause(0.1)
-                    %         end
+                    % Compute minimum bounding circle of polygon
+                    [center, rad] = Voronoi.PolyBoundingCircle(polygon);
+                    
+                    % Get x, y coords of center point
+                    Px(i) = center(1,1);
+                    Py(i) = center(1,2);
+                    
+                    % Update radius return variable with this MBC's radius
+                    R(i,1) = rad;
                 end
             end
         end
         
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Polygonal Centroid %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function [Cx,Cy] = PolyCentroid(X,Y)
             % POLYCENTROID returns the coordinates for the centroid of polygon with vertices X,Y
             % The centroid of a non-self-intersecting closed polygon defined by n vertices (x0,y0), (x1,y1), ..., (xn?1,yn?1) is the point (Cx, Cy), where
             % In these formulas, the vertices are assumed to be numbered in order of their occurrence along the polygon's perimeter, and the vertex ( xn, yn ) is assumed to be the same as ( x0, y0 ). Note that if the points are numbered in clockwise order the area A, computed as above, will have a negative sign; but the centroid coordinates will be correct even in this case.http://en.wikipedia.org/wiki/Centroid
             % A = polyarea(X,Y)
+            %
+            % Originally sourced from Aaron Becker: https://www.mathworks.com/matlabcentral/fileexchange/41507-lloydsalgorithm-px-py-crs-numiterations-showplot
+            % Modified by Andrew McDonald for use in OpenSwarm
             
             Xa = [X(2:end);X(1)];
             Ya = [Y(2:end);Y(1)];
@@ -149,10 +110,14 @@ classdef Voronoi
             Cy = (1/(6*A)*sum((Y + Ya).*(X.*Ya-Xa.*Y)));
         end
         
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Voronoi Construction %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function [V,C] = VoronoiBounded(x,y, crs)
             % VORONOIBOUNDED computes the Voronoi cells about the points (x,y) inside
             % the bounding box (a polygon) crs.  If crs is not supplied, an
             % axis-aligned box containing (x,y) is used.
+            %
+            % Originally sourced from Aaron Becker: https://www.mathworks.com/matlabcentral/fileexchange/41507-lloydsalgorithm-px-py-crs-numiterations-showplot
+            % Modified by Andrew McDonald for use in OpenSwarm
             
             % V is the set of edge vertices
             
@@ -211,8 +176,95 @@ classdef Voronoi
                 
             end
         end
-
         
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Polygonal Min. Bounding Circle %%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function [c, r] = PolyBoundingCircle(X)
+            % POLYBOUNDINGCIRCLE: Wrapper function to simplify calls to
+            % minCircle below
+            n = size(X, 1);
+            m = 1;
+            bndry = [-5000, 5000; -5000, -5000; -5000, -5000];
+            [c, r] = Voronoi.minCircle(n, X, m, bndry);            
+        end
+        
+        function [C,minRad] = minCircle(n,p,m,b)
+            %  MINCIRCLE    Finds the minimum circle enclosing a given set of 2-D points.
+            %
+            % Usage:
+            %   [C,minRad] = minCircle(n,pts,m,bndry)
+            %   where:
+            %   OUTPUT:
+            %    C: the center of the circle
+            %    minRad: the radius of the circle
+            %   INPUT:
+            %    n: number of points given
+            %    m: an argument used by the function. Always use 1 for m.
+            %    bnry: an argument (3x2 array) used by the function to set the points that
+            %          determines the circle boundry. You have to be careful when choosing this
+            %          array's values. I think the values should be somewhere outside your points
+            %          boundary. For my case, for example, I know the (x,y) I have will be something
+            %          in between (-5,-5) and (5,5), so I use bnry as:
+            %                       [-10 -10
+            %                        -10 -10
+            %                        -10 -10]
+            % Notes:
+            %  1. This function uses the "distance" and "findCenterRadius" functions.
+            %  2. The n and b arguments are not actually inputs by the user. The should be
+            %     set as described above. Since this function uses recursion, I couldn't
+            %     omit them. If you can,do it!
+            %
+            %
+            %
+            %
+            %   Rewritten from a Java applet by Shripad Thite (http://heyoka.cs.uiuc.edu/~thite/mincircle/).
+            %
+            %   Yazan Ahed (yash78@gmail.com)
+            c = [-1 -1];
+            r = 0;
+            if (m == 2)
+                c = b(1,:);
+                r = 0;
+            elseif (m == 3)
+                c = (b(1,:) + b(2,:))/2;
+                r = Voronoi.distance(b(1,:),c);
+            elseif (m == 4)
+                [C,minRad] = Voronoi.findCenterRadius(b(1,:),b(2,:),b(3,:));
+                return;
+            end
+            C = c;
+            minRad = r;
+            for i = 1:n
+                if(Voronoi.distance(p(i,:),C) > minRad)
+                    if((b(1,:) ~= p(i,:)) & (b(2,:) ~= p(i,:)) & (b(3,:) ~= p(i,:)))
+                        b(m,:) = p(i,:);
+                        [C,minRad] = Voronoi.minCircle(i,p,m+1,b);
+                    end
+                end
+            end
+        end
+        
+        function d = distance(x,y)
+            % DISTANCE   find the distance between two points in the Cartesian space
+            %
+            % Usage:
+            %   distance = dist(x,y), where x and y are a 1x2 (2D) or 1x3 (3D) vectors.
+            %
+            d = sqrt(sum((x - y).^2));
+        end
+        
+        function [C,Radius] = findCenterRadius(p1,p2,p3)
+            % FINDCENTERRADIUS      finds the center and radius of a circle defined by three points.
+            %
+            % Usage:
+            %   [C,Raduis] = findCenterRadius(p1,p2,p3), where:
+            %       C: the circle's centre
+            %       Raduis: the circle's radius
+            %       p1, p2, p3: a two element vectors with the points (x,y) coordinates
+            Xc = (p3(1)*p3(1) * (p1(2) - p2(2)) + (p1(1)*p1(1) + (p1(2) - p2(2))*(p1(2) - p3(2))) * (p2(2) - p3(2)) + p2(1)*p2(1) * (-p1(2) + p3(2))) / (2 * (p3(1) * (p1(2) - p2(2)) + p1(1) * (p2(2) - p3(2)) + p2(1) * (-p1(2) + p3(2))));
+            Yc = (p2(2) + p3(2))/2 - (p3(1) - p2(1))/(p3(2) - p2(2)) * (Xc - (p2(1) + p3(1))/2);
+            C = [Xc Yc];
+            Radius = distance(C,p1);
+        end
     end
 end
 

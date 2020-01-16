@@ -40,6 +40,10 @@ classdef HILGPC_Data < handle
         Centroids       % map<str(id), Position> of centroids of weighted voronoi partition
         CentroidsMatrix % simple nRobots x 2 matrix of x,y positions of centroids
         
+        % Most recent circumcenter positions from weighted voronoi partition
+        Circumcenters       % map<str(id), Position> of circumcenters of weighted voronoi partition
+        CircumcentersMatrix % simple nRobots x 2 matrix of x,y circumcenters of centroids
+        
         % Most recent uncertainty-maximizing positions from weighted voronoi partition
         MaxS2            % map<str(id), Position> of max uncertainty positions in weighted voronoi cells
         MaxS2Matrix      % simple nRobots x 2 matrix of x,y positions of max uncertainty points
@@ -463,8 +467,7 @@ classdef HILGPC_Data < handle
             py = starting_positions(:,2);
             
             numIterations = 1;    % only converge to centroids 1x in simulation
-            visualize = false;
-            [new_px, new_py] = Voronoi.LloydsAlgorithm(px, py, corners, numIterations, visualize);
+            [new_px, new_py] = Voronoi.LloydsAlgorithmCentroids(px, py, corners, numIterations);
             cartogram_centroids = [new_px, new_py];
             
             % Visualize cartogram centroids
@@ -489,6 +492,80 @@ classdef HILGPC_Data < handle
             % method
             obj.CentroidsMatrix = centroids;
             obj.Centroids = obj.MatrixToPositions(centroids);          
+            
+        end
+        
+        function ComputeCircumcenters(obj)
+            % Given TestPoints and TestMeans taken as the demand function,
+            % computes weighted voronoi partition of field given robot
+            % positions specified by environment. Positions and sets
+            % Circumcenters member variable accordingly
+            
+            % get current robot positions
+            positions = obj.PositionsToMatrix();
+            
+            % Step 1: Normalize mean function prior to mapping to
+            % uniform-density cartogram
+            obj.NormalizeMeans();
+            
+            % Step 2: Map (x,y) points of field by diffeomorphism to
+            % alternate field in which f is of uniform density using
+            % cartogram helper function
+            cartogram = obj.ComputeCartogram();
+            
+            % Visualize cartogram on auxiliary axes
+            ax = obj.Plotter.AuxiliaryAxes;
+            hold(ax, 'off');
+            scatter(ax, cartogram(:,1), cartogram(:,2), 1, 'black', 'filled');
+            
+            % Step 3: Compute boundary / corners of cartogram mapping
+            corner_indices = boundary(cartogram);
+            corners = cartogram(corner_indices, :);
+            
+            % Visualize cartogram boundary on auxiliary axes
+            hold(ax, 'on');
+            scatter(ax, corners(:,1), corners(:,2), 5, 'red', 'filled');
+            
+            % Step 4: Compute voronoi circumcenters on cartogram mapping:
+            % snap current positions to nearest neighbor in test points and
+            % map to cartogrammed location of test point
+            starting_indices = knnsearch(obj.TestPoints, positions);
+            starting_positions = cartogram(starting_indices, :);
+            px = starting_positions(:,1);
+            py = starting_positions(:,2);
+            
+            numIterations = 1;    % only converge to circumcenters 1x in simulation
+            [new_px, new_py, radii] = Voronoi.LloydsAlgorithmCircumcenters(px, py, corners, numIterations);
+            cartogram_circumcenters = [new_px, new_py];
+            
+            % Visualize cartogram circumcenters
+            scatter(ax, cartogram_circumcenters(:,1), cartogram_circumcenters(:,2), 10, 'red', 'filled');
+            
+            % Plot bounding circles
+            pos = [cartogram_circumcenters - radii, radii .* 2, radii.*2];
+            for i = 1:size(radii, 1)
+                rectangle(ax, 'Position',pos(i, :),'Curvature',[1 1]);
+            end
+                        
+            % Step 5: Invert mapping on circumcenters by taking the original
+            % positions of the nearest neighbor of each circumcenter point
+            % within the cartogram
+            circumcenter_indices = knnsearch(cartogram, cartogram_circumcenters);
+            circumcenters = obj.TestPoints(circumcenter_indices, :);
+            
+            % Visualize inverted circumcenters and original field boundary
+            scatter(ax, circumcenters(:,1), circumcenters(:,2), 10, 'blue', 'filled');
+            rect = polyshape([0, obj.Environment.XAxisSize, obj.Environment.XAxisSize, 0], [0, 0, obj.Environment.YAxisSize, obj.Environment.YAxisSize]); 
+            plot(ax, rect, 'FaceAlpha', 0, 'EdgeColor', 'blue');
+            
+            % Rescale axes and set title
+            title(ax, 'Exploit: Circumcenter Step');
+            ax.DataAspectRatio = [1,1,1];
+                        
+            % Step 6: Set CentroidsMatrix and Centroids fields with helper
+            % method
+            obj.CircumcentersMatrix = circumcenters;
+            obj.Circumcenters = obj.MatrixToPositions(circumcenters);          
             
         end
         
@@ -594,7 +671,7 @@ classdef HILGPC_Data < handle
             title(ax, 'Explore: MaxS2 Step');
             ax.DataAspectRatio = [1,1,1];
             
-            % Visualize inverted centroids and original field boundary
+            % Visualize inverted max s2 points and original field boundary
             scatter(ax, max_s2_points(:,1), max_s2_points(:,2), 10, 'blue', 'filled');
             rect = polyshape([0, obj.Environment.XAxisSize, obj.Environment.XAxisSize, 0], [0, 0, obj.Environment.YAxisSize, obj.Environment.YAxisSize]); 
             plot(ax, rect, 'FaceAlpha', 0, 'EdgeColor', 'blue');
