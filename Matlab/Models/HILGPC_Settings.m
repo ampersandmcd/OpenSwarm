@@ -15,6 +15,7 @@ classdef HILGPC_Settings
         MaxEvals          % function evaluation limit for minimize
         MaxClicks         % levels of user input
         DistanceThreshold % between user input points
+        EdgeGuard         % how close to the screen edges robots may get
         
         % Functions for use in GP model
         MeanFunction
@@ -34,6 +35,7 @@ classdef HILGPC_Settings
             % (they will not change often)
             obj.GridResolution = 10;
             obj.DistanceThreshold = 50;
+            obj.EdgeGuard = 50;
             obj.MaxEvals = 10;
             obj.MaxClicks = 5;
             obj.MeanFunction = [];

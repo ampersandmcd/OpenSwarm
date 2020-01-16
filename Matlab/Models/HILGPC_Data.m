@@ -29,6 +29,8 @@ classdef HILGPC_Data < handle
         
         % Predicted data (used to visualize the GP)
         TestPoints      % n rows by 2 col of (x,y) points to evaluate model
+        TestMeshX       % n x n matrix meshgrid of X testpoints
+        TestMeshY       % n x n matrix meshgrid of Y testpoints
         TestMeans       % n rows output by model
         NormalizedTestMeans % n rows output by model normalized between 0 and 1
         TestS2          % n rows output by model
@@ -56,10 +58,13 @@ classdef HILGPC_Data < handle
             obj.Plotter = plotter;
             obj.Settings = hilgpc_settings;
             
-            % generate test points
-            [plotX, plotY] = meshgrid(0:hilgpc_settings.GridResolution:environment.XAxisSize, ...
-                                        0:hilgpc_settings.GridResolution:environment.YAxisSize);
-            obj.TestPoints = reshape([plotX, plotY], [], 2);
+            % generate test points with guard around perimeter to
+            % aviod robot collisions
+            pad = hilgpc_settings.EdgeGuard;
+            [obj.TestMeshX, obj.TestMeshY] = meshgrid(...
+                pad:hilgpc_settings.GridResolution:environment.XAxisSize-pad, ...
+                pad:hilgpc_settings.GridResolution:environment.YAxisSize-pad);
+            obj.TestPoints = reshape([obj.TestMeshX, obj.TestMeshY], [], 2);
 
             % configure GP hyperparameters
             ell = 100;
@@ -265,16 +270,16 @@ classdef HILGPC_Data < handle
             end
             
             % mesh GP surface
-            [plotX, plotY] = meshgrid(0:obj.Settings.GridResolution:obj.Environment.XAxisSize, ...
-                                        0:obj.Settings.GridResolution:obj.Environment.YAxisSize);
-            mesh(plotX, plotY, reshape(obj.TestMeans, size(plotX, 1), []));
+            mesh(obj.TestMeshX, obj.TestMeshY, reshape(obj.TestMeans, size(obj.TestMeshX, 1), []));
             colormap(gray);
             
             % mesh upper and lower 95CI bounds
             lower_bound = obj.TestMeans - 2*sqrt(obj.TestS2);
             upper_bound = obj.TestMeans + 2*sqrt(obj.TestS2);
-            mesh(plotX, plotY, reshape(lower_bound, size(plotX, 1), []), 'FaceColor', [0,1,1], 'EdgeColor', 'blue', 'FaceAlpha', 0.3);
-            mesh(plotX, plotY, reshape(upper_bound, size(plotX, 1), []), 'FaceColor', [1,0.5,0], 'EdgeColor', 'red', 'FaceAlpha', 0.3);
+            mesh(obj.TestMeshX, obj.TestMeshY, reshape(lower_bound, size(obj.TestMeshX, 1), []),...
+                'FaceColor', [0,1,1], 'EdgeColor', 'blue', 'FaceAlpha', 0.3);
+            mesh(obj.TestMeshX, obj.TestMeshY, reshape(upper_bound, size(obj.TestMeshX, 1), []),...
+                'FaceColor', [1,0.5,0], 'EdgeColor', 'red', 'FaceAlpha', 0.3);
         
             title(sprintf("Estimated Function with Sample Points\n(s2 threshold = %f)", obj.Settings.S2Threshold));
             legend(legend_text, 'Location', 'Northeast');
@@ -549,6 +554,11 @@ classdef HILGPC_Data < handle
                 % get indices of points in this voronoi cell polygon
                 in_indices = inpolygon(cartogram(:,1), cartogram(:,2), polygon(:,1), polygon(:,2));
                 
+                % get actual points in cartogram and original space at
+                % these indices
+                in_points_cartogram = cartogram(in_indices, :);
+                in_points_original = obj.TestPoints(in_indices, :)
+                
                 % get uncertainties of points in this voronoi cell polygon
                 in_s2 = obj.TestS2(in_indices, :);
                 
@@ -557,25 +567,37 @@ classdef HILGPC_Data < handle
                 
                 % store coordinates of this uncertainty-maximizing point
                 % for this cell in the original, non-uniform space
-                max_s2_point = obj.TestPoints(max_s2_index,:);
-                max_s2_points(i, :) = max_s2_point;
+                max_s2_point_cartogram = in_points_cartogram(max_s2_index,:);
+                max_s2_point_original = in_points_original(max_s2_index,:);
+                max_s2_points(i, :) = max_s2_point_original;
                
                 
                 
-                % Visualizations for debugging
+                % Visualizations for debugging - MOVE
                 pshape = polyshape(polygon(:,1), polygon(:,2));
                 in_points = cartogram(in_indices, :);
                 in_original_points = obj.TestPoints(in_indices, :);
+                color = obj.Plotter.RobotColors(i,:)
+                dark_color = [0 0 0];
+                size = obj.Plotter.DotSize;
                 
-                plot(pshape);
-                scatter(in_points(:,1), in_points(:,2));
-                scatter(in_original_points(:,1), in_original_points(:,2));
-                scatter(max_s2_point(:,1), max_s2_point(:,2));
+                plot(pshape, 'FaceColor', color);
+%                 hold on;
+%                 scatter(in_points(:,1), in_points(:,2), size, color);
+                scatter(in_original_points(:,1), in_original_points(:,2), size, color);
+%                 scatter(max_s2_point_cartogram(:,1), max_s2_point_cartogram(:,2), size, dark_color);
+%                 scatter(max_s2_point_original(:,1), max_s2_point_original(:,2), size, dark_color);
+%                 hold off;
             end
             
             % Rescale axes and set title
             title(ax, 'Explore: MaxS2 Step');
             ax.DataAspectRatio = [1,1,1];
+            
+            % Visualize inverted centroids and original field boundary
+            scatter(ax, max_s2_points(:,1), max_s2_points(:,2), 10, 'blue', 'filled');
+            rect = polyshape([0, obj.Environment.XAxisSize, obj.Environment.XAxisSize, 0], [0, 0, obj.Environment.YAxisSize, obj.Environment.YAxisSize]); 
+            plot(ax, rect, 'FaceAlpha', 0, 'EdgeColor', 'blue');
 
             % Step 6: Set MaxS2Matrix and MaxS2 fields with helper
             % method

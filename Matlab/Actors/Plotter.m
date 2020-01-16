@@ -4,6 +4,8 @@ classdef Plotter < handle
     properties
         Environment;        % Environment object dependency
         
+        RobotColors;        % colormap to plot individual robots
+        
         LocationAxes;       % axes on which to plot robot locations
         ColorImageAxes;     % axes on which to show current color image
         BWImageAxes;        % axes on which to show current bw image
@@ -33,6 +35,8 @@ classdef Plotter < handle
             obj.Environment = inputEnvironment;
             
             % configure preferences
+            obj.RobotColors = lines(obj.Environment.NumRobots);
+            
             obj.XLabelOffset = 50;
             obj.YLabelOffset = 50;
             obj.DotSize = 36;
@@ -107,17 +111,17 @@ classdef Plotter < handle
                     target = obj.Environment.Targets(num2str(i));
                     
                     % plot and label position, heading, (x,y) coords:
-                    scatter(obj.LocationAxes, position.Center.X, position.Center.Y, obj.DotSize, obj.PositionColor);
-                    quiver(obj.LocationAxes, position.Center.X, position.Center.Y, (position.Nose.X - position.Center.X) * obj.HeadingScalar, (position.Nose.Y - position.Center.Y) * obj.HeadingScalar, 'Color', obj.HeadingColor);
+                    scatter(obj.LocationAxes, position.Center.X, position.Center.Y, obj.DotSize, obj.RobotColors(i,:));
+                    quiver(obj.LocationAxes, position.Center.X, position.Center.Y, (position.Nose.X - position.Center.X) * obj.HeadingScalar, (position.Nose.Y - position.Center.Y) * obj.HeadingScalar, 'Color', obj.RobotColors(i,:));
                     message = sprintf('%0.0f\n(%0.0f, %0.0f)\n%0.0f°', i, position.Center.X, position.Center.Y, position.Heading);
-                    text(obj.LocationAxes, (position.Center.X + obj.XLabelOffset), (position.Center.Y + obj.YLabelOffset), message, 'Color', obj.PositionTextColor)
+                    text(obj.LocationAxes, (position.Center.X + obj.XLabelOffset), (position.Center.Y + obj.YLabelOffset), message, 'Color', obj.RobotColors(i,:))
                     
                     % plot and label heading from center through nose point
-                    text(obj.LocationAxes, (position.Center.X - obj.XLabelOffset), (position.Center.Y - obj.YLabelOffset), num2str(position.Heading), 'Color', obj.HeadingTextColor)
+                    text(obj.LocationAxes, (position.Center.X - obj.XLabelOffset), (position.Center.Y - obj.YLabelOffset), num2str(position.Heading), 'Color', obj.RobotColors(i,:))
                     
                     % plot and label target
-                    scatter(obj.LocationAxes, target.Center.X, target.Center.Y, obj.DotSize, obj.TargetColor);
-                    text(obj.LocationAxes, (target.Center.X + obj.XLabelOffset), (target.Center.Y + obj.YLabelOffset), num2str(i), 'Color', obj.TargetTextColor)
+                    scatter(obj.LocationAxes, target.Center.X, target.Center.Y, obj.DotSize, obj.RobotColors(i,:));
+                    text(obj.LocationAxes, (target.Center.X + obj.XLabelOffset), (target.Center.Y + obj.YLabelOffset), num2str(i), 'Color', obj.RobotColors(i,:))
                     
                 end
                 
