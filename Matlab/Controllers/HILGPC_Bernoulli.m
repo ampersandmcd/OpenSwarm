@@ -35,7 +35,7 @@ rng(100);
 % configure HILGPC settings
 s2_threshold = 0; % parameter does not apply in this algorithm - only in Threshold algorithm
 recycle_human_prior = true;
-human_prior_filename = "../Data/prior2_confidence0.8.csv";
+human_prior_filename = "../Data/prior4_confidence0.8.csv";
 hilgpc_settings = HILGPC_Settings(s2_threshold, recycle_human_prior, human_prior_filename);
 
 % create HILGPC data object
@@ -94,7 +94,7 @@ while true
     if exploit
         % conduct one iteration of Lloyd's Algorithm to circumcenters
         % (exploit)
-        hilgpc_data.ComputeCircumcenters();
+        hilgpc_data.ComputeCentroidsNumerically();
         targets = hilgpc_data.Centroids;
         environment.Targets = targets;
         

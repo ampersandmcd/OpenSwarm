@@ -6,7 +6,7 @@ classdef Voronoi
     end
     
     methods(Static)
-        function [Px, Py] = LloydsAlgorithmCentroids(Px,Py, crs, numIterations)
+        function [Px, Py] = LloydsAlgorithmCentroidsCartogram(Px,Py, crs, numIterations)
             % LLOYDSALGORITHMCENTROID runs Lloyd's algorithm on the particles at xy positions
             % (Px,Py) within the boundary polygon crs for numIterations iterations
             %
@@ -62,12 +62,7 @@ classdef Voronoi
             %
             % Originally sourced from Aaron Becker: https://www.mathworks.com/matlabcentral/fileexchange/41507-lloydsalgorithm-px-py-crs-numiterations-showplot
             % Modified by Andrew McDonald for use in OpenSwarm
-            
-            % set range
-            xrange = max(crs(:,1));
-            yrange = max(crs(:,2));
-            n = numel(Px); %number of robots
-            
+           
             % Iteratively Apply LLYOD's Algorithm
             for counter = 1:numIterations
                 
@@ -88,6 +83,75 @@ classdef Voronoi
                     % Update radius return variable with this MBC's radius
                     R(i,1) = rad;
                 end
+            end
+        end
+        
+        function [Px, Py, polygons] = LloydsAlgorithmCentroidsNumerically(Px,Py, crs, Tx, Ty, f)
+            % LLOYDSALGORITHMCENTROID runs Lloyd's algorithm on the particles at xy positions
+            % (Px,Py) within the boundary polygon crs for numIterations iterations
+            %
+            % Lloyd's algorithm (centroid) starts with an initial distribution of samples or
+            % points and consists of repeatedly executing one relaxation step:
+            %   1.  The Voronoi diagram of all the points is computed.
+            %   2.  Each cell of the Voronoi diagram is integrated and the centroid is computed.
+            %   3.  Each point is then moved to the centroid of its Voronoi cell.
+            % 
+            % PARAMS
+            % Px: vector of starting x coordinates
+            % Py: vector of starting y coordinates
+            % crs: polygon in which to compute voronoi diagram
+            % Tx: vector of test x coordinates at which f is sampled
+            % Ty: vector of test y coordinates at which f is sampled
+            % f:  vector of test function values at sampled X and Y coordinates
+            %     specified by Tx and Ty
+            %
+            % RETURNS
+            % Px: vector of centroid x coordinates
+            % Py: vector of centroid y coordinates
+            % polygons: vector of polygon objects of each voronoi cell
+            %
+            % Inspired by http://www.mathworks.com/matlabcentral/fileexchange/34428-voronoilimit
+            % Requires the Polybool function of the mapping toolbox to run.
+            %
+            % Originally sourced from Aaron Becker: https://www.mathworks.com/matlabcentral/fileexchange/41507-lloydsalgorithm-px-py-crs-numiterations-showplot
+            % Modified by Andrew McDonald for use in OpenSwarm with
+            % nonuniform density functions
+            
+            % Construct voronoi diagram and initialize return vector
+            [vertices,cells]=Voronoi.VoronoiBounded(Px,Py, crs);
+            polygons = cell(size(Px, 1), 1);
+            
+            for i = 1:numel(cells) %calculate the centroid of each cell
+                
+                % Construct an n x 2 matrix of voronoi polygon points and
+                % save into return vector
+                polygon = [vertices(cells{i},1),vertices(cells{i},2)];
+                polygons{i,1} = polygon;
+                
+                % Determine test points inside of this polygon
+                in_indices = inpolygon(Tx, Ty, polygon(:,1), polygon(:,2));
+                
+                % Subset test points inside of this polygon
+                in_tx = Tx(in_indices, 1);
+                in_ty = Ty(in_indices, 1);
+                in_f = f(in_indices, 1);
+                
+                % Compute numerical integral over region to obtain mass
+                % by discrete approximation: compute the average value of
+                % f, then multiply by the area of the region
+                avg_f = mean(in_f);
+                mass = avg_f * polyarea(polygon(:,1), polygon(:,2));
+                
+                % Compute numerical integral over region to obtain centers
+                % by discrete approximation: compute the average value of
+                % x*f, then multiply by the area of the region, then divide
+                % by the mass of the region to get its center of mass
+                avg_xf = mean(in_f .* [in_tx, in_ty]);
+                weighted_mass = avg_xf * polyarea(polygon(:,1), polygon(:,2));
+                centroid = weighted_mass / mass;
+                Px(i) = centroid(1);
+                Py(i) = centroid(2);
+
             end
         end
         

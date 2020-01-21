@@ -427,11 +427,13 @@ classdef HILGPC_Data < handle
             
         end
         
-        function ComputeCentroids(obj)
+        function ComputeCentroidsCartogram(obj)
             % Given TestPoints and TestMeans taken as the demand function,
             % computes weighted voronoi partition of field given robot
             % positions specified by environment. Positions and sets
-            % Centroids member variable accordingly
+            % Centroids member variable accordingly. Utilizes cartogram
+            % mapping to determine voronoi partition and centroids in a
+            % uniform space, then maps back to the original space
             
             % get current robot positions
             positions = obj.PositionsToMatrix();
@@ -467,7 +469,7 @@ classdef HILGPC_Data < handle
             py = starting_positions(:,2);
             
             numIterations = 1;    % only converge to centroids 1x in simulation
-            [new_px, new_py] = Voronoi.LloydsAlgorithmCentroids(px, py, corners, numIterations);
+            [new_px, new_py] = Voronoi.LloydsAlgorithmCentroidsCartogram(px, py, corners, numIterations);
             cartogram_centroids = [new_px, new_py];
             
             % Visualize cartogram centroids
@@ -499,7 +501,9 @@ classdef HILGPC_Data < handle
             % Given TestPoints and TestMeans taken as the demand function,
             % computes weighted voronoi partition of field given robot
             % positions specified by environment. Positions and sets
-            % Circumcenters member variable accordingly
+            % Circumcenters member variable accordingly. Utilizes cartogram
+            % mapping to determine voronoi partition and circumcenters in a
+            % uniform space, then maps back to the original space
             
             % get current robot positions
             positions = obj.PositionsToMatrix();
@@ -566,6 +570,58 @@ classdef HILGPC_Data < handle
             % method
             obj.CircumcentersMatrix = circumcenters;
             obj.Circumcenters = obj.MatrixToPositions(circumcenters);          
+            
+        end
+        
+        function ComputeCentroidsNumerically(obj)
+            % Given TestPoints and TestMeans taken as the demand function,
+            % computes weighted voronoi partition of field given robot
+            % positions specified by environment. Positions and sets
+            % Centroids member variable accordingly. Utilizes numerical
+            % integration to compute centroids of a voronoi partition in
+            % the original space.
+            
+            % get current robot positions
+            positions = obj.PositionsToMatrix();
+            
+            % Step 1: Normalize mean function prior to computing centroids
+            obj.NormalizeMeans();
+            
+            % Step 2: Compute voronoi centroids in original space using
+            % numerical integration of f
+            px = positions(:,1);
+            py = positions(:,2);
+            corners = [min(obj.TestPoints(:,1)), min(obj.TestPoints(:,2));
+                max(obj.TestPoints(:,1)), min(obj.TestPoints(:,2));
+                max(obj.TestPoints(:,1)), max(obj.TestPoints(:,2));
+                min(obj.TestPoints(:,1)), max(obj.TestPoints(:,2))];
+            tx = obj.TestPoints(:,1);
+            ty = obj.TestPoints(:,2);
+            f_samples = obj.NormalizedTestMeans;
+            
+            [new_px, new_py, polygons] = Voronoi.LloydsAlgorithmCentroidsNumerically(...
+                px, py, corners, tx, ty, f_samples);
+            centroids = [new_px, new_py];
+
+            % Visualize Voronoi partitions and centroids
+            ax = obj.Plotter.AuxiliaryAxes;
+            cla(ax);
+            hold(ax, 'on');
+            
+            for i = 1:obj.Environment.NumRobots
+                pgon = polygons{i,1};
+                plot(ax, polyshape(pgon(:,1), pgon(:,2)));
+            end
+            scatter(ax, centroids(:,1), centroids(:,2), 10, 'black', 'filled');
+            
+            % Rescale axes and set title
+            title(ax, 'Exploit: Centroid Step');
+            ax.DataAspectRatio = [1,1,1];
+                        
+            % Step 6: Set CentroidsMatrix and Centroids fields with helper
+            % method
+            obj.CentroidsMatrix = centroids;
+            obj.Centroids = obj.MatrixToPositions(centroids);          
             
         end
         
