@@ -35,7 +35,7 @@ rng(100);
 % configure HILGPC settings
 s2_threshold = 0; % parameter does not apply in this algorithm - only in Threshold algorithm
 recycle_human_prior = true;
-human_prior_filename = "../Data/prior4_confidence0.8.csv";
+human_prior_filename = "../Data/prior5_confidence0.8.csv";
 hilgpc_settings = HILGPC_Settings(s2_threshold, recycle_human_prior, human_prior_filename);
 
 % create HILGPC data object
@@ -87,7 +87,7 @@ while true
     
     % force test
     %
-     exploit = true;
+     exploit = false;
     %
     %
     
@@ -101,7 +101,7 @@ while true
     else
         % conduct max-uncertainty sample within Voronoi partitions
         % (explore)
-        hilgpc_data.ComputeCellMaxS2();
+        hilgpc_data.ComputeCellMaxS2Numerically();
         targets = hilgpc_data.MaxS2;
         environment.Targets = targets;
         

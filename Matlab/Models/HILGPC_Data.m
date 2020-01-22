@@ -625,12 +625,14 @@ classdef HILGPC_Data < handle
             
         end
         
-        function ComputeCellMaxS2(obj)
+        function ComputeCellMaxS2Cartogram(obj)
             % Given TestPoints, TestMeans, and TestSD taken as the demand function,
             % computes weighted voronoi partition of field given robot
             % positions specified by environment.Positions, then finds
             % uncertainty-maximizing point within each cell, and sets MaxS2
-            % member variable accordingly
+            % member variable accordingly. Utilizes cartogram
+            % mapping to determine voronoi partition and maxS2 points in a
+            % uniform space, then maps back to the original space
             
             % get current robot positions
             positions = obj.PositionsToMatrix();
@@ -736,9 +738,78 @@ classdef HILGPC_Data < handle
             % method
             obj.MaxS2Matrix = max_s2_points;
             obj.MaxS2 = obj.MatrixToPositions(max_s2_points);  
+
+        end
+        
+        function ComputeCellMaxS2Numerically(obj)
+            % Given TestPoints, TestMeans, and TestSD taken as the demand function,
+            % computes weighted voronoi partition of field given robot
+            % positions specified by environment.Positions, then finds
+            % uncertainty-maximizing point within each cell, and sets MaxS2
+            % member variable accordingly. Utilizes voronoi partition in
+            % the original space to determine set of MaxS2 points
             
             
+            % Configure visualization for debugging
+            ax = obj.Plotter.AuxiliaryAxes;
+            cla(ax);
+            hold(ax, 'on');
             
+            % Get current robot positions
+            positions = obj.PositionsToMatrix();          
+        
+            % Step 1: Compute voronoi partition of original space and
+            % initialize local variables
+            px = positions(:,1);  % initializer points
+            py = positions(:,2);
+            corners = [min(obj.TestPoints(:,1)), min(obj.TestPoints(:,2));  % corners of polygon to be voronoi'd
+                max(obj.TestPoints(:,1)), min(obj.TestPoints(:,2));
+                max(obj.TestPoints(:,1)), max(obj.TestPoints(:,2));
+                min(obj.TestPoints(:,1)), max(obj.TestPoints(:,2))];
+            
+            [vertices, cells] = Voronoi.VoronoiBounded(px, py, corners);
+            
+            % Step 2: Find uncertainty-maximizing points in each
+            % Voronoi partition and add to set to be sampled
+            max_s2_points = zeros(obj.Environment.NumRobots, 2);
+            
+            for i = 1:obj.Environment.NumRobots
+                
+                % Iterate through each Voronoi cell polygon
+                cell = cells{i};
+                polygon = vertices(cell, :); % subset the vertices of the polygon bounding just this cell
+                
+                % Get indices of test points in this Voronoi cell polygon
+                in_indices = inpolygon(obj.TestPoints(:,1), obj.TestPoints(:,2), polygon(:,1), polygon(:,2));
+
+                % Get coordinates of points in this Voronoi cell polygon
+                in_points = obj.TestPoints(in_indices, :);
+                
+                % Get uncertainties of points in this Voronoi cell polygon
+                in_s2 = obj.TestS2(in_indices, :);
+                
+                % Find max uncertainty of this Voronoi cell polygon
+                [max_s2, max_s2_index] = max(in_s2);
+                
+                % Store coordinates of this call's maxS2 point
+                max_s2_point = in_points(max_s2_index,:);
+                max_s2_points(i, :) = max_s2_point;
+               
+                % Visualize
+                color = obj.Plotter.RobotColors(i,:);
+                size = obj.Plotter.DotSize;
+                plot(ax, polyshape(polygon(:,1), polygon(:,2)), 'FaceColor', color);
+                scatter(ax, max_s2_point(:,1), max_s2_point(:,2), size, color, 'filled');
+            end
+            
+            % Rescale axes and set title
+            title(ax, 'Explore: MaxS2 Step');
+            ax.DataAspectRatio = [1,1,1];
+
+            % Step 3: Set MaxS2Matrix and MaxS2 fields with helper
+            obj.MaxS2Matrix = max_s2_points;
+            obj.MaxS2 = obj.MatrixToPositions(max_s2_points);  
+
         end
        
         function mat = PositionsToMatrix(obj)

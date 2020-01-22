@@ -39,7 +39,7 @@ classdef Plotter < handle
             
             obj.XLabelOffset = 50;
             obj.YLabelOffset = 50;
-            obj.DotSize = 36;
+            obj.DotSize = 72;
             obj.HeadingScalar = 5;
             
             obj.PositionColor = 'blue';
