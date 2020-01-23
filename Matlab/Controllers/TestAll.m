@@ -1,4 +1,4 @@
-%Test: check functionalities of various Actors and Models
+%TestAll: check functionalities of various Actors and Models
 
 %% SETUP 
 

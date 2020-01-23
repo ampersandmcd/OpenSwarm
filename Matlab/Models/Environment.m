@@ -43,7 +43,7 @@ classdef Environment < handle
             obj.AnchorsPerRobot = 3;
             obj.Iteration = 1;      
             obj.UDPTransmission = true;
-            obj.UDPReception = false;
+            obj.UDPReception = true;
             obj.ConvergenceThreshold = 50;
             obj.FullSpeedThreshold = 300;
             obj.Delay = 2;

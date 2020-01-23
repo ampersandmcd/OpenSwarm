@@ -22,6 +22,9 @@ classdef Messenger < handle
         % dynamic attributes
         UDPTransmitter; % udp object to broadcast commands
         UDPReceiver;    % struct of udp objects to receive commands
+        
+        Received        % boolean indicating if ALL robots received a message last iteration
+        LastMessage;    % nRobots x 1 array of last message received from robots
     end
     
     methods
@@ -40,6 +43,9 @@ classdef Messenger < handle
             obj.UDPReceiverIP = '10.10.10.255';
             obj.UDPReceiverRemotePort = 8080;
             obj.UDPReceiverLocalPort = 8000;
+            
+            obj.LastMessage = zeros(inputEnvironment.NumRobots, 1);
+            obj.Received = false;
             
             if obj.Environment.UDPTransmission
                 obj = obj.StartUDPTransmitter();
@@ -84,6 +90,38 @@ classdef Messenger < handle
             %SendMessage:
             %   Broadcast the string parameter 'message' over UDP
             fwrite(obj.UDPTransmitter, message);
+        end
+        
+        function obj = ReadMessage(obj)
+           %ReadMessage:
+           %    Read all incoming messages in the UDPReciever cell array.
+           %    Update LastMessage member array to contain last message
+           %    from each robot.
+           %    Set Received true if all messages in LastMessage were
+           %    updated; else, set false.
+           
+           % Assume we have received all messages; set false if not
+           obj.Received = true;
+           
+           % Iterate over all robots in field
+           for i = 1:obj.Environment.NumRobots
+
+               udpr = obj.UDPReceiver{i};
+               length = udpr.BytesAvailable;
+
+               if length > 0
+                   % Message reception successful
+                   message = fscanf(udpr);
+                   number = str2double(message);
+                   obj.LastMessage(i,1) = number;
+               else
+                    % Message reception unsuccessful
+                    obj.Received = false;
+                    warning("Robot %d did not send feedback", i);
+               end
+
+           end
+           
         end
         
         function message = BuildDirectionsMessage(obj, directions)

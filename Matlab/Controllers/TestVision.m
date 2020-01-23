@@ -1,4 +1,4 @@
-%Test: check functionalities of various Actors and Models
+%TestVision: check functionalities of Vision class
 
 %% SETUP 
 

@@ -8,7 +8,8 @@
 %% SETUP: OpenSwarm depenencies
 
 % initialize environment settings
-environment = Environment(4, bounds);
+% note: obtain bounds using Utils/ImageConfiguration.m
+environment = Environment(2, bounds);
 
 % initialize plot helper object
 plotter = Plotter(environment);
@@ -119,6 +120,9 @@ while true
 
             % wait for directions to execute
             pause(environment.Delay);
+            
+            % read back feedback
+            messenger.ReadMessage();
         end
         
         % update positions
@@ -129,7 +133,26 @@ while true
     % robots are now converged on this round's targets
     % if this is an exploration step, sample and update the GP
     if ~exploit
-        % take samples from each robot
+        
+        % repeat until robots all send back a valid sample
+        while ~messenger.Received
+            
+            % send null directions to prompt robot feedback
+            halt = navigator.GetHaltDirections();
+            messenger.SendDirections(halt);
+            
+            % wait for directions to execute
+            pause(environment.Delay);
+            
+            % read back feedback
+            messenger.ReadMessage();
+        end
+        
+        % Now, messenger.LastMessage contains an array of latest feedbacks
+        samples = messenger.LastMessage;
+
+        % calibrate LDRs to match intensity
+        % scale LDRs to match GP levels
         % add sample and sample location to GP sample points and sample means
         % add sample and sample location to GP train points and train means
         % recompute the GP
