@@ -194,9 +194,7 @@ classdef HILGPC_Data < handle
             ylim([0, obj.Environment.YAxisSize]);
             
             % configure aesthetics
-            title(sprintf("Click to indicate function mean on testbed from\n " ...
-                + "scale of 0-%d, where\n 0 = darkest and " ...
-                + "%d = brightest", obj.Settings.MaxClicks, obj.Settings.MaxClicks));
+            title(sprintf("Click to indicate function mean over testbed on scale of 0-5"));
             box on;
             daspect([1,1,1]);
             colormap(jet);
@@ -215,7 +213,7 @@ classdef HILGPC_Data < handle
                 [x,y] = point.ToPair();
                 level = inputs{i, 2};
                 
-                scatter(ax, x, y, 50, level, 'filled');
+                scatter(ax, x, y, 200, level, 'filled');
             end
         end
         
@@ -253,24 +251,29 @@ classdef HILGPC_Data < handle
             cla(ax);
             axes(ax);
             hold on;
+           
             
-            % scatter ground truth from human
-            scatter3(obj.InputPoints(:,1) , obj.InputPoints(:,2), obj.InputMeans, 'black', 'filled');
+            if obj.Plotter.ShowTrainPoints
+                % scatter ground truth from human
+                scatter3(obj.InputPoints(:,1) , obj.InputPoints(:,2), obj.InputMeans, 'black', 'filled');
+                
+                % scatter Gaussian-shifted training points based on ground
+                % truth of human
+                scatter3(obj.TrainPoints(:,1) , obj.TrainPoints(:,2), obj.TrainMeans(:,1), 'magenta', 'filled');
             
-            % scatter Gaussian-shifted training points based on ground
-            % truth of human
-            scatter3(obj.TrainPoints(:,1) , obj.TrainPoints(:,2), obj.TrainMeans(:,1), 'magenta', 'filled');
-            
-            % scatter points-to-sample in blue
-            if size(obj.SamplePoints, 1) > 0
-                scatter3(obj.SamplePoints(:,1) , obj.SamplePoints(:,2), obj.SampleMeans(:,1), 'blue', 'filled');
-                legend_text = ["Human-input ground truth", ...
-                "Gaussian-shifted train points to account for confidence", ...
-                "Points to sample", "Mean", "Lower CI-95", "Upper CI-95"];
+                if size(obj.SamplePoints, 1) > 0
+                    % scatter points-to-sample in blue
+                    scatter3(obj.SamplePoints(:,1) , obj.SamplePoints(:,2), obj.SampleMeans(:,1), 'blue', 'filled');
+                    legend_text = ["Human-input ground truth", ...
+                    "Gaussian-shifted train points to account for confidence", ...
+                    "Points to sample", "Mean", "Lower CI-95", "Upper CI-95"];
+                else
+                    legend_text = ["Human-input ground truth", ...
+                    "Gaussian-shifted train points to account for confidence", ...
+                    "Mean", "Lower CI-95", "Upper CI-95"];
+                end
             else
-                legend_text = ["Human-input ground truth", ...
-                "Gaussian-shifted train points to account for confidence", ...
-                "Mean", "Lower CI-95", "Upper CI-95"];
+                legend_text = ["Mean", "Lower CI-95", "Upper CI-95"];
             end
             
             % mesh GP surface
@@ -283,12 +286,40 @@ classdef HILGPC_Data < handle
             mesh(obj.TestMeshX, obj.TestMeshY, reshape(lower_bound, size(obj.TestMeshX, 1), []),...
                 'FaceColor', [0,1,1], 'EdgeColor', 'blue', 'FaceAlpha', 0.3);
             mesh(obj.TestMeshX, obj.TestMeshY, reshape(upper_bound, size(obj.TestMeshX, 1), []),...
-                'FaceColor', [1,0.5,0], 'EdgeColor', 'red', 'FaceAlpha', 0.3);
+                'FaceColor', [0,1,0.5], 'EdgeColor', 'green', 'FaceAlpha', 0.3);
         
-            title(sprintf("Estimated Function with Sample Points\n(s2 threshold = %f)", obj.Settings.S2Threshold));
+            title(sprintf("GP Function Estimate", obj.Settings.S2Threshold));
             legend(legend_text, 'Location', 'Northeast');
             
             view(3)
+        end
+        
+        function ExportGPToJpg(obj)
+            %EXPORTGPTOJPG
+            % Export a visualization of this GP to a jpg image for
+            % projection
+            
+            % Plot mesh of GP
+            figure;
+            s = mesh(obj.TestMeshX, obj.TestMeshY, reshape(obj.TestMeans, size(obj.TestMeshX, 1), []));
+            
+            % Turn off axes and set 2d view
+            set(gca, 'visible', 'off');
+            view(2);
+            
+            % Set colormap
+            colormap('winter');
+            
+            % Fill mesh with color and set background to black
+            s.FaceColor = 'flat';
+            set(gcf, 'color', 'black');
+            
+            % Autoscale axes and save
+            axis([min(obj.TestPoints(:,1)), max(obj.TestPoints(:,1)), ...
+                min(obj.TestPoints(:,2)), max(obj.TestPoints(:,2))]);
+            
+
+            
         end
         
         function RecycleHumanPrior(obj)
@@ -609,10 +640,13 @@ classdef HILGPC_Data < handle
             hold(ax, 'on');
             
             for i = 1:obj.Environment.NumRobots
+                color = obj.Plotter.RobotColors(i,:);
+                size = obj.Plotter.DotSize;
                 pgon = polygons{i,1};
                 plot(ax, polyshape(pgon(:,1), pgon(:,2)));
+                scatter(ax, centroids(i,1), centroids(i,2), size, color, 'filled');
             end
-            scatter(ax, centroids(:,1), centroids(:,2), 10, 'black', 'filled');
+            
             
             % Rescale axes and set title
             title(ax, 'Exploit: Centroid Step');
@@ -794,7 +828,7 @@ classdef HILGPC_Data < handle
                 % Store coordinates of this call's maxS2 point
                 max_s2_point = in_points(max_s2_index,:);
                 max_s2_points(i, :) = max_s2_point;
-               
+              
                 % Visualize
                 color = obj.Plotter.RobotColors(i,:);
                 size = obj.Plotter.DotSize;

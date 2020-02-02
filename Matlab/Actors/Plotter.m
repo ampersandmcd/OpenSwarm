@@ -25,6 +25,8 @@ classdef Plotter < handle
         
         HeadingColor;       % color in which to plot heading vectors
         HeadingTextColor;   % color in which to label robot headings
+        
+        ShowTrainPoints     % Boolean setting to show training points
     end
     
     methods
@@ -50,6 +52,8 @@ classdef Plotter < handle
             
             obj.HeadingColor = 'blue';
             obj.HeadingTextColor = 'blue';
+            
+            obj.ShowTrainPoints = false;
             
             % configure axes in which to plot: set title, aspect ratio and
             % axis limits
@@ -117,11 +121,11 @@ classdef Plotter < handle
                     text(obj.LocationAxes, (position.Center.X + obj.XLabelOffset), (position.Center.Y + obj.YLabelOffset), message, 'Color', obj.RobotColors(i,:))
                     
                     % plot and label heading from center through nose point
-                    text(obj.LocationAxes, (position.Center.X - obj.XLabelOffset), (position.Center.Y - obj.YLabelOffset), num2str(position.Heading), 'Color', obj.RobotColors(i,:))
+                    % text(obj.LocationAxes, (position.Center.X - obj.XLabelOffset), (position.Center.Y - obj.YLabelOffset), num2str(position.Heading), 'Color', obj.RobotColors(i,:))
                     
                     % plot and label target
-                    scatter(obj.LocationAxes, target.Center.X, target.Center.Y, obj.DotSize, obj.RobotColors(i,:));
-                    text(obj.LocationAxes, (target.Center.X + obj.XLabelOffset), (target.Center.Y + obj.YLabelOffset), num2str(i), 'Color', obj.RobotColors(i,:))
+                    scatter(obj.LocationAxes, target.Center.X, target.Center.Y, obj.DotSize, obj.RobotColors(i,:), 'filled');
+                    % text(obj.LocationAxes, (target.Center.X + obj.XLabelOffset), (target.Center.Y + obj.YLabelOffset), num2str(i), 'Color', obj.RobotColors(i,:))
                     
                 end
                 

@@ -4,7 +4,7 @@
 
 % initialize environment settings
 % note: obtain bounds using Utils/ImageConfiguration.m
-environment = Environment(2, bounds);
+environment = Environment(1, bounds);
 
 % initialize plot helper object
 plotter = Plotter(environment);
@@ -21,7 +21,7 @@ messenger = Messenger(environment, plotter);
 %% TEST
 while true
     
-    message = '<start><1>15,100</1><2>15,100</2><end>';
+    message = '<start><3>15,100</3><4>15,100</4><end>';
     
     % send test message
     messenger.SendMessage(message);

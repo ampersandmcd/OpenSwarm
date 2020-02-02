@@ -9,7 +9,7 @@
 
 % initialize environment settings
 % note: obtain bounds using Utils/ImageConfiguration.m
-environment = Environment(2, bounds);
+environment = Environment(4, bounds);
 
 % initialize plot helper object
 plotter = Plotter(environment);
@@ -36,7 +36,7 @@ rng(100);
 % configure HILGPC settings
 s2_threshold = 0; % parameter does not apply in this algorithm - only in Threshold algorithm
 recycle_human_prior = true;
-human_prior_filename = "../Data/prior5_confidence0.8.csv";
+human_prior_filename = "../Data/prior6_confidence0.8.csv";
 hilgpc_settings = HILGPC_Settings(s2_threshold, recycle_human_prior, human_prior_filename);
 
 % create HILGPC data object
@@ -88,7 +88,7 @@ while true
     
     % force test
     %
-     exploit = false;
+     exploit = true;
     %
     %
     
