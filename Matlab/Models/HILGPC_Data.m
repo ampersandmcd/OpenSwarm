@@ -56,6 +56,7 @@ classdef HILGPC_Data < handle
         
         % Other relevant GP data
         Hyp             % hyperparameters of GP model
+        Model           % MFGP model from python code
     end
     
     methods
@@ -349,7 +350,16 @@ classdef HILGPC_Data < handle
            X_H = obj.HifiTrainPoints;
            y_H = obj.HifiTrainMeans;
            
-           obj.Hyp = mfgp_matlab.train_MFGP(X_L, y_L, X_H, y_H);
+           % Train model
+           obj.Model = mfgp_matlab.train_MFGP(X_L, y_L, X_H, y_H);
+           
+           % Predict using model
+           % TestPoints is X_star
+           X_star = obj.TestPoints;
+           result = mfgp_matlab.predict_MFGP(obj.Model, X_star);
+           cr = cell(result);
+           mu = cell(cr{1});
+           var = cell(cr{2});
         end
         
         function u = GetMaxUncertainty(obj)

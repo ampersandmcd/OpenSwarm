@@ -11,6 +11,7 @@ import pandas as pd
 import autograd.numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
+import matlab
 from matplotlib import cm
 import numpy
 from pyDOE import lhs
@@ -24,11 +25,8 @@ from scipy.spatial import distance_matrix
 
 # np.random.seed(1234)
 
-def Normalize(X, X_m, X_s):
-    return (X - X_m) / (X_s)
-
-
 def train_MFGP(X_Lmem, y_Lmem, X_Hmem, y_Hmem):
+    # Train interface with matlab
 
     # Convert to numpy from memoryview objects passed by matlab
     X_L = np.asarray(X_Lmem)
@@ -40,14 +38,20 @@ def train_MFGP(X_Lmem, y_Lmem, X_Hmem, y_Hmem):
     y_L = y_L[:, np.newaxis]
     y_H = y_H[:, np.newaxis]
 
-    print(X_L.shape)
-    print(y_L.shape)
-    print(X_H.shape)
-    print(y_H.shape)
+    # Construct and train model
     model = Multifidelity_GP(X_L, y_L, X_H, y_H)
     model.train()
     return model
 
+
+def predict_MFGP(model, X_star):
+    # Prediction interface with matlab
+
+    # Predict given test points
+    pred_u_star, var_u_star = model.predict(X_star)
+
+    # Return mu and var
+    return matlab.double(pred_u_star.tolist())
 
 # def tsp_solve(X):
 #     if X.shape[0] < 4:
