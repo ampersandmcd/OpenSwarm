@@ -43,11 +43,11 @@ rng(100);
 
 % configure HILGPC settings
 s2_threshold = 0; % parameter does not apply in this algorithm - only in Threshold algorithm
-recycle_human_prior = true;
-recycle_sample_prior = true;
-human_prior_filename = "../Data/dist7_lofi.csv";
-sample_prior_filename = "../Data/dist7_hifi.csv";
-hilgpc_settings = HILGPC_Settings(s2_threshold, recycle_human_prior, human_prior_filename, recycle_sample_prior, sample_prior_filename);
+recycle_lofi_prior = true;
+recycle_hifi_prior = true;
+lofi_prior_filename = "../Data/collect_lofi.csv";
+hifi_prior_filename = "../Data/collect_hifi.csv";
+hilgpc_settings = HILGPC_Settings(s2_threshold, recycle_lofi_prior, lofi_prior_filename, recycle_hifi_prior, hifi_prior_filename);
 
 % create HILGPC data object
 hilgpc_data = HILGPC_Data(environment, plotter, hilgpc_settings);
@@ -56,21 +56,18 @@ hilgpc_data = HILGPC_Data(environment, plotter, hilgpc_settings);
 hilgpc_planner = HILGPC_Planner(environment, hilgpc_settings, hilgpc_data);
 
 
-
-
-
 %% INPUT
 
-if ~recycle_human_prior
+if ~recycle_lofi_prior
     % if not recycling human prior, get lofi input and save it
-    hilgpc_data.GetHumanPrior();
-    hilgpc_data.SavePrior(human_prior_filename, "low");
+    hilgpc_data.GetLofiPrior();
+    hilgpc_data.SavePrior(lofi_prior_filename, "low");
 end
 
-if ~recycle_sample_prior
+if ~recycle_hifi_prior
     % if not recycling sample prior, get hifi input and save it
-    hilgpc_data.GetSamplePrior();
-    hilgpc_data.SavePrior(sample_prior_filename, "high");
+    hilgpc_data.GetHifiPrior();
+    hilgpc_data.SavePrior(hifi_prior_filename, "high");
 end
 
 hilgpc_data.ComputeMFGP(mfgp_matlab);
@@ -87,7 +84,7 @@ prob_exploit = exp(-k * max_u);
 %% ITERATE
 
 
-while true
+while environment.Iteration() < 50
     
     % update current positions of robots in field
     vision.UpdatePositions();
@@ -99,12 +96,12 @@ while true
     
     % draw from a Bernoulli with prob_exploit where 1 => exploitation step
     % and 0 => exploration step
-    exploit = binornd(1, prob_exploit);
+    % exploit = binornd(1, prob_exploit);
     
     
     % force test
     %
-     exploit = true;
+    exploit = false;
     %
     %
     
@@ -118,8 +115,9 @@ while true
     else
         % conduct max-uncertainty sample within Voronoi partitions
         % (explore)
-        hilgpc_data.ComputeCellMaxS2Numerically();
-        targets = hilgpc_data.MaxS2;
+        % hilgpc_data.ComputeCellMaxS2Numerically();
+        hilgpc_data.ComputeRandomSearch();
+        targets = hilgpc_data.RandomSample;
         environment.Targets = targets;
         
     end
@@ -150,7 +148,7 @@ while true
     % if this is an exploration step, sample and update the GP
     if ~exploit
         
-        % repeat until robots all send back a valid sample
+        % Repeat until robots all send back a valid sample
         while ~messenger.Received
             
             % send null directions to prompt robot feedback
@@ -166,6 +164,16 @@ while true
         
         % Now, messenger.LastMessage contains an array of latest feedbacks
         samples = messenger.LastMessage;
+        
+        % Get positions for easy manipulation
+        positions = hilgpc_data.PositionsToMatrix();
+            
+        % Update model with new samples
+        hilgpc_data.UpdateModel(positions, samples);
+        
+        % Recompute and revisualize model
+        hilgpc_data.ComputeMFGP(mfgp_matlab);
+        hilgpc_data.VisualizeGP();
 
         % calibrate LDRs to match intensity
         % scale LDRs to match GP levels
@@ -180,6 +188,11 @@ while true
     environment.Iterate();
     
 end
+
+
+% Save recorded samples
+samples_file = "../Data/collect_MFGP.csv";
+hilgpc_data.SaveSamples(samples_file);
 
 
 disp("end")

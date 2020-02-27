@@ -6,12 +6,12 @@ classdef HILGPC_Settings
     
     properties
         % Reuse saved user input?
-        RecycleHumanPrior
-        RecycleFilename
+        RecycleLofiPrior
+        LofiFilename
         
         % Save sampled data?
-        RecycleSamplePrior
-        SampleFilename
+        RecycleHifiPrior
+        HifiFilename
         
         % Settings for use in evaluation of GP
         GridResolution
@@ -28,14 +28,14 @@ classdef HILGPC_Settings
     end
     
     methods
-        function obj = HILGPC_Settings(threshold, recycle_human, human_filename, recycle_sample, sample_filename)
+        function obj = HILGPC_Settings(threshold, recycle_lofi, lofi_filename, recycle_hifi, hifi_filename)
             %HILGPC_SETTINGS
             %   Instantiate settings object
             obj.S2Threshold = threshold;
-            obj.RecycleHumanPrior = recycle_human;
-            obj.RecycleFilename = human_filename;
-            obj.RecycleSamplePrior = recycle_sample;
-            obj.SampleFilename = sample_filename;
+            obj.RecycleLofiPrior = recycle_lofi;
+            obj.LofiFilename = lofi_filename;
+            obj.RecycleHifiPrior = recycle_hifi;
+            obj.HifiFilename = hifi_filename;
             
             % manually configure the following properties in this class
             % (they will not change often)

@@ -30,9 +30,7 @@ messenger = Messenger(environment, plotter);
 %% SETUP: HILGPC dependencies
 
 % run GPML Startup
-%run('gpstartup.m');
-mfgp_matlab = py.importlib.import_module('mfgp_matlab');
-py.importlib.reload(mfgp_matlab);
+run('gpstartup.m');
 
 % set random seed for Gaussian reproducibility
 rng(100);
@@ -41,8 +39,8 @@ rng(100);
 s2_threshold = 0; % parameter does not apply in this algorithm - only in Threshold algorithm
 recycle_human_prior = true;
 recycle_sample_prior = true;
-human_prior_filename = "dist7_hifi.csv";
-sample_prior_filename = "dist7_hifi.csv";
+human_prior_filename = "prior6_confidence0.8.csv";
+sample_prior_filename = "prior6_confidence0.8.csv";
 hilgpc_settings = HILGPC_Settings(s2_threshold, recycle_human_prior, human_prior_filename, recycle_sample_prior, sample_prior_filename);
 
 % create HILGPC data object

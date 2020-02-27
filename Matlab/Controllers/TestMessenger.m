@@ -4,7 +4,7 @@
 
 % initialize environment settings
 % note: obtain bounds using Utils/ImageConfiguration.m
-environment = Environment(1, bounds);
+environment = Environment(4, bounds);
 
 % initialize plot helper object
 plotter = Plotter(environment);
@@ -21,7 +21,7 @@ messenger = Messenger(environment, plotter);
 %% TEST
 while true
     
-    message = '<start><3>15,100</3><4>15,100</4><end>';
+    message = '<start><1>0,100</1><2>0,0</2><3>0,0</3><4>0,0</4><end>';
     
     % send test message
     messenger.SendMessage(message);
@@ -31,4 +31,10 @@ while true
 
     % read received messages
     messenger.ReadMessage();
+    
+    if messenger.Received
+       for i = 1:environment.NumRobots
+           fprintf("Robot %d : %d\n", i, messenger.LastMessage(i,1));
+       end
+    end
 end

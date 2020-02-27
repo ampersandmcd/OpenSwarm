@@ -18,20 +18,24 @@ classdef HILGPC_Data < handle
         InputConfidence % human-input lofi confidence in measurements
         
         % Machine-sampled data (high-fidelity)
+        SampleIds       % n rows by 1 col of machine-sampled point robot ids
         SamplePoints    % n rows by 2 col of machine-sampled (x,y) points
         SampleMeans     % n rows by 1 col of machine-sampled means
         SampleS2        % n rows by 1 col of machine-sampled variances
         SampleConfidence % sample-input lofi confidence in measurements
+        NumSamples      % how many samples have been collected
         
         % Human-Train data (low-fidelity)
         LofiTrainPoints     % InputPoints doubled up for training
         LofiTrainMeans      % InputMeans doubled up for training
         LofiTrainS2         % InputS2 doubled up for training
+        NumLofi
         
         % Machine-train data (high-fidelity)
         HifiTrainPoints     % SamplePoints doubled up for training
         HifiTrainMeans      % SampleMeans doubled up for training
         HifiTrainS2         % SampleS2 doubled up for training
+        NumHifi
         
         % Predicted data (used to visualize the GP)
         TestPoints      % n rows by 2 col of (x,y) points to evaluate model
@@ -54,9 +58,14 @@ classdef HILGPC_Data < handle
         MaxS2            % map<str(id), Position> of max uncertainty positions in weighted voronoi cells
         MaxS2Matrix      % simple nRobots x 2 matrix of x,y positions of max uncertainty points
         
+        % Most recent random point in a region to sample
+        RandomSample     % map<str(id), Position>
+        RandomSampleMatrix
+        
         % Other relevant GP data
         Hyp             % hyperparameters of GP model
         Model           % MFGP model from python code
+        Loss            % Loss metric over time (sequence of entries)
     end
     
     methods
@@ -87,17 +96,20 @@ classdef HILGPC_Data < handle
             obj.Hyp = hyp;
             
             % if reusing user input, load data
-            if obj.Settings.RecycleHumanPrior
-                obj.RecycleHumanPrior();
+            if obj.Settings.RecycleLofiPrior
+                obj.RecycleLofiPrior();
             end
             
-            if obj.Settings.RecycleSamplePrior
-                obj.RecycleSamplePrior();
+            if obj.Settings.RecycleHifiPrior
+                obj.RecycleHifiPrior();
             end
+            
+            % initialize number of samples to zero
+            obj.NumSamples = 0;
             
         end
         
-        function obj = GetHumanPrior(obj)
+        function obj = GetLofiPrior(obj)
             % GETHumanPRIOR
             %   Take human input for estimations of mean and s2 to
             %   initialize the lofi prior for GP estimation
@@ -188,9 +200,12 @@ classdef HILGPC_Data < handle
                 obj.LofiTrainMeans(2*i, 1) = upper;
                 
             end
+            
+            % Set size member
+            obj.NumLofi = size(obj.LofiTrainMeans,1);
         end
             
-        function obj = GetSamplePrior(obj)
+        function obj = GetHifiPrior(obj)
             % GETSAMPLEPRIOR
             %   Take human input for estimations of mean and s2 to
             %   initialize the hifi-prior for mfgp
@@ -282,6 +297,9 @@ classdef HILGPC_Data < handle
                 obj.HifiTrainMeans(2*i, 1) = upper;
                 
             end
+            
+            % Set size member
+            obj.NumHifi = size(obj.HifiTrainMeans,1);
         end
         
         function h = GetInputGUI(obj)
@@ -424,6 +442,54 @@ classdef HILGPC_Data < handle
             legend(legend_text, 'Location', 'Northeast');
             
             view(3)
+            xlim auto;
+            ylim auto;
+            zlim auto;
+        end
+        
+        function UpdateModel(obj, positions, samples)
+            % Update hifi training points given samples taken at x,y
+            % positions
+            
+            % Rescale from analog 0-1024 scale to 0-5 scale
+            samples = obj.RescaleSamples(samples);
+           
+            % Iterate over robots, saving current coordinate and light level
+            % into sample points and sample means
+            for i = 1:size(positions, 1)
+                
+                % Increment counter
+                obj.NumSamples = obj.NumSamples + 1;
+                obj.NumHifi = obj.NumHifi + 1;
+                n_s = obj.NumSamples;
+                n_h = obj.NumHifi;
+                
+                % Keep this robot id in SampleIds
+                obj.SampleIds(n_s, 1) = i;
+                
+                % Keep this sample (x,y) in SamplePoints and add to Hifi
+                % training set
+                obj.SamplePoints(n_s, 1:2) = positions(i, 1:2);
+                obj.HifiTrainPoints(n_h, 1:2) = positions(i, 1:2);
+                
+                % Keep this sample mean level in SampleMeans and add to
+                % Hifi training set
+                obj.SampleMeans(n_s, 1) = samples(i, 1);
+                obj.HifiTrainMeans(n_h, 1) = samples(i, 1);
+                
+                % Report to user
+                fprintf("Robot %d : %f at position (%f, %f)\n",...
+                    i, samples(i,1), positions(i,1), positions(i,2));
+            end
+            fprintf("\n");
+            
+        end
+        
+        function samples = RescaleSamples(obj, samples)
+            % Rescale readings from analog sensor to 0-5 scale for training
+            
+            samples = samples ./ 1024 .* 5;
+            
         end
         
         function ExportGPToJpg(obj)
@@ -440,7 +506,7 @@ classdef HILGPC_Data < handle
             view(2);
             
             % Set colormap
-            colormap('winter');
+            colormap('hot');
             
             % Fill mesh with color and set background to black
             s.FaceColor = 'flat';
@@ -452,24 +518,21 @@ classdef HILGPC_Data < handle
             
         end
         
-        function RecycleHumanPrior(obj)
-            % Given hifi sample prior, reconstruct from CSV
+        function RecycleLofiPrior(obj)
+            % Given lofi prior, reconstruct from CSV
             
-            prior = readtable(obj.Settings.RecycleFilename);
+            prior = readtable(obj.Settings.LofiFilename);
             
             % save first two columns of (x,y) points without header row
-            obj.InputPoints = prior{1:end, 1:2};
-            obj.LofiTrainPoints = obj.InputPoints;
+            tempPoints = prior{1:end, 1:2};
             
             % save third column of means without header row
-            obj.InputMeans = prior{1:end, 3};
-            obj.LofiTrainMeans = obj.InputMeans;
+            tempMeans = prior{1:end, 3};
             
             % save user confidence in fourth column without header row
             obj.InputConfidence = prior{1, 4};
             
             % build test set
-            
             % add 2 points to the training set each offset by one stddev
             % to properly train model mean and variance given imperfect
             % human input
@@ -479,44 +542,44 @@ classdef HILGPC_Data < handle
             
             % iterate through input means and shift up and down to
             % upper/lower uncertainty bounds to create train means
-%             for i = 1:size(obj.InputPoints, 1)
-%                 
-%                 % compute upper and lower bounds
-%                 mean = obj.InputMeans(i, 1);
-%                 shift = uncertainty * mean;
-%                 upper = mean + shift;
-%                 lower = mean - shift;
-%                 
-%                 % create lower bound train point on odd indices
-%                 obj.LofiTrainPoints(2*i-1, 1:2) = obj.InputPoints(i, 1:2);
-%                 obj.LofiTrainMeans(2*i-1, 1) = lower;
-%                 
-%                 % create upper bound train point on even indices
-%                 obj.LofiTrainPoints(2*i, 1:2) = obj.InputPoints(i, 1:2);
-%                 obj.LofiTrainMeans(2*i, 1) = upper;
-%                 
-%             end
+            for i = 1:size(tempMeans, 1)
+                
+                % compute upper and lower bounds
+                mean = tempMeans(i, 1);
+                shift = uncertainty * mean;
+                upper = mean + shift;
+                lower = mean - shift;
+                
+                % create lower bound train point on odd indices
+                obj.LofiTrainPoints(2*i-1, 1:2) = tempPoints(i, 1:2);
+                obj.LofiTrainMeans(2*i-1, 1) = lower;
+                
+                % create upper bound train point on even indices
+                obj.LofiTrainPoints(2*i, 1:2) = tempPoints(i, 1:2);
+                obj.LofiTrainMeans(2*i, 1) = upper;
+                
+            end
+            
+            % Set size member
+            obj.NumLofi = size(obj.LofiTrainMeans,1);
             
         end
         
-        function RecycleSamplePrior(obj)
+        function RecycleHifiPrior(obj)
             % Given hifi sample prior, reconstruct from CSV
             
-            prior = readtable(obj.Settings.SampleFilename);
+            prior = readtable(obj.Settings.HifiFilename);
             
             % save first two columns of (x,y) points without header row
-            obj.SamplePoints = prior{1:end, 1:2};
-            obj.HifiTrainPoints = obj.SamplePoints;
+            tempPoints = prior{1:end, 1:2};
             
             % save third column of means without header row
-            obj.SampleMeans = prior{1:end, 3};
-            obj.HifiTrainMeans = obj.SampleMeans;
+            tempMeans = prior{1:end, 3};
             
             % save user confidence in fourth column without header row
             obj.SampleConfidence = prior{1, 4};
             
             % build test set
-            
             % add 2 points to the training set each offset by one stddev
             % to properly train model mean and variance given imperfect
             % human input
@@ -526,24 +589,26 @@ classdef HILGPC_Data < handle
             
             % iterate through input means and shift up and down to
             % upper/lower uncertainty bounds to create train means
-%             for i = 1:size(obj.SamplePoints, 1)
-%                 
-%                 % compute upper and lower bounds
-%                 mean = obj.SampleMeans(i, 1);
-%                 shift = uncertainty * mean;
-%                 upper = mean + shift;
-%                 lower = mean - shift;
-%                 
-%                 % create lower bound train point on odd indices
-%                 obj.HifiTrainPoints(2*i-1, 1:2) = obj.SamplePoints(i, 1:2);
-%                 obj.HifiTrainMeans(2*i-1, 1) = lower;
-%                 
-%                 % create upper bound train point on even indices
-%                 obj.HifiTrainPoints(2*i, 1:2) = obj.SamplePoints(i, 1:2);
-%                 obj.HifiTrainMeans(2*i, 1) = upper;
-%                 
-%             end
+            for i = 1:size(tempMeans, 1)
+                
+                % compute upper and lower bounds
+                mean = tempMeans(i, 1);
+                shift = uncertainty * mean;
+                upper = mean + shift;
+                lower = mean - shift;
+                
+                % create lower bound train point on odd indices
+                obj.HifiTrainPoints(2*i-1, 1:2) = tempPoints(i, 1:2);
+                obj.HifiTrainMeans(2*i-1, 1) = lower;
+                
+                % create upper bound train point on even indices
+                obj.HifiTrainPoints(2*i, 1:2) = tempPoints(i, 1:2);
+                obj.HifiTrainMeans(2*i, 1) = upper;
+                
+            end
             
+            % Set size member
+            obj.NumHifi = size(obj.HifiTrainMeans,1);
         end
         
         function SavePrior(obj, filename, fidelity)
@@ -562,6 +627,19 @@ classdef HILGPC_Data < handle
             fclose(file);
             
             dlmwrite(filename, prior, '-append');
+            
+        end
+        
+        function SaveSamples(obj, filename) 
+            % After data collection, save samples to file with filename
+            
+            file = fopen(filename, 'w');
+            fprintf(file, "X,Y,Sample,RobotId\n");
+            fclose(file);
+            
+            samples = cat(2, obj.SamplePoints, obj.SampleMeans, obj.SampleIds);
+            
+            dlmwrite(filename, samples, '-append');
             
         end
         
@@ -1030,6 +1108,121 @@ classdef HILGPC_Data < handle
             obj.MaxS2Matrix = max_s2_points;
             obj.MaxS2 = obj.MatrixToPositions(max_s2_points);  
 
+        end
+        
+        function ComputeRandomSearch(obj)
+            % Given TestPoints, TestMeans, and TestSD taken as the demand function,
+            % computes weighted voronoi partition of field given robot
+            % positions specified by environment.Positions, then randomly
+            % selects a point to sample within each region
+            
+            
+            % Configure visualization for debugging
+            ax = obj.Plotter.AuxiliaryAxes;
+            cla(ax);
+            hold(ax, 'on');
+            
+            % Get current robot positions
+            positions = obj.PositionsToMatrix();          
+        
+            % Step 1: Compute voronoi partition of original space and
+            % initialize local variables
+            px = positions(:,1);  % initializer points
+            py = positions(:,2);
+            corners = [min(obj.TestPoints(:,1)), min(obj.TestPoints(:,2));  % corners of polygon to be voronoi'd
+                max(obj.TestPoints(:,1)), min(obj.TestPoints(:,2));
+                max(obj.TestPoints(:,1)), max(obj.TestPoints(:,2));
+                min(obj.TestPoints(:,1)), max(obj.TestPoints(:,2))];
+            
+            [vertices, cells] = Voronoi.VoronoiBounded(px, py, corners);
+            
+            % Step 2: Find uncertainty-maximizing points in each
+            % Voronoi partition and add to set to be sampled
+            random_samples = zeros(obj.Environment.NumRobots, 2);
+            
+            for i = 1:obj.Environment.NumRobots
+                
+                % Iterate through each Voronoi cell polygon
+                cell = cells{i};
+                polygon = vertices(cell, :); % subset the vertices of the polygon bounding just this cell
+                
+                % Get indices of test points in this Voronoi cell polygon
+                in_indices = inpolygon(obj.TestPoints(:,1), obj.TestPoints(:,2), polygon(:,1), polygon(:,2));
+
+                % Get coordinates of points in this Voronoi cell polygon
+                in_points = obj.TestPoints(in_indices, :);
+                                
+                % Randomly sample some point in this cell
+                n = length(in_points);
+                random_point = in_points(randi(n),:);
+                random_samples(i, :) = random_point;
+              
+                % Visualize
+                color = obj.Plotter.RobotColors(i,:);
+                size = obj.Plotter.DotSize;
+                plot(ax, polyshape(polygon(:,1), polygon(:,2)), 'FaceColor', color);
+                scatter(ax, random_point(:,1), random_point(:,2), size, color, 'filled');
+            end
+            
+            % Rescale axes and set title
+            title(ax, 'Explore: Random Step');
+            ax.DataAspectRatio = [1,1,1];
+
+            % Step 3: Set MaxS2Matrix and MaxS2 fields with helper
+            obj.RandomSampleMatrix = random_samples;
+            obj.RandomSample = obj.MatrixToPositions(random_samples);  
+
+        end
+        
+        function loss = ComputeLoss(obj)
+           % Given a current state of robots, compute the loss WRT squared-distance from weight metric 
+           
+           % Get current robot positions
+            positions = obj.PositionsToMatrix();          
+        
+            % Step 1: Compute voronoi partition of original space and
+            % initialize local variables
+            px = positions(:,1);  % initializer points
+            py = positions(:,2);
+            corners = [min(obj.TestPoints(:,1)), min(obj.TestPoints(:,2));  % corners of polygon to be voronoi'd
+                max(obj.TestPoints(:,1)), min(obj.TestPoints(:,2));
+                max(obj.TestPoints(:,1)), max(obj.TestPoints(:,2));
+                min(obj.TestPoints(:,1)), max(obj.TestPoints(:,2))];
+            
+            [vertices, cells] = Voronoi.VoronoiBounded(px, py, corners);
+            
+            % Step 2: Iterate over entire point set in each cell and
+            % compute loss WRT f
+            loss = 0;
+            
+            for i = 1:obj.Environment.NumRobots
+                                
+                % Iterate through each Voronoi cell polygon
+                cell = cells{i};
+                polygon = vertices(cell, :); % subset the vertices of the polygon bounding just this cell
+                
+                % Get indices of test points in this Voronoi cell polygon
+                in_indices = inpolygon(obj.TestPoints(:,1), obj.TestPoints(:,2), polygon(:,1), polygon(:,2));
+
+                % Get coordinates of points in this Voronoi cell polygon
+                in_points = obj.TestPoints(in_indices, :);
+                in_means = obj.TestMeans(in_indices, :);
+                                
+                % Compute loss by squared distance times f integrated on V
+                dist_sq = power((in_points(:,1) - positions(i,1)), 2) + power((in_points(:,2) - positions(i,2)), 2); %n x 1 vector
+                weighted_dist = in_means .* dist_sq; % n x 1 vector
+                avg_value = mean(weighted_dist); % scalar
+                cell_loss = avg_value * polyarea(polygon(:,1), polygon(:,2));
+                
+                % Add cell loss to total and continue
+                loss = loss + cell_loss;
+                
+            end
+            
+            % Step 3: Save loss
+            obj.Loss = cat(1, obj.Loss, loss);
+
+           
         end
        
         function mat = PositionsToMatrix(obj)

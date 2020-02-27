@@ -46,7 +46,7 @@ classdef Environment < handle
             obj.UDPReception = true;
             obj.ConvergenceThreshold = 50;
             obj.FullSpeedThreshold = 300;
-            obj.Delay = 2;
+            obj.Delay = 4;
             obj.GoHome = true;
         end
                 

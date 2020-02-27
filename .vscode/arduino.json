@@ -1,6 +1,6 @@
 {
     "board": "arduino:avr:uno",
     "programmer": "AVR ISP",
-    "sketch": "Arduino\\src\\Pathfinder.ino",
-    "port": "COM5"
+    "sketch": "Arduino\\src\\Pathfinder\\Pathfinder.ino",
+    "port": "COM8"
 }

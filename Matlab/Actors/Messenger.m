@@ -133,8 +133,12 @@ classdef Messenger < handle
             message = '<start>';
             for i = 1:obj.Environment.NumRobots
                 % get burst for robot i from Directions map
-                burst = directions(num2str(i));
-                
+                try
+                    burst = directions(num2str(i));
+                catch
+                    burst.Angle = 0;
+                    burst.Speed = 0;
+                end
                 % create submessage for robot i of the form
                 % <IDnum>angle,speed</IDnum>%
                 % where angle & speed are rounded to int
