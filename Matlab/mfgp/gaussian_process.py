@@ -41,7 +41,7 @@ class GP:
         output_scale = np.exp(hyp[0])
         lengthscales = np.exp(hyp[1:])
         diffs = np.expand_dims(x / lengthscales, 1) - \
-                np.expand_dims(xp / lengthscales, 0)
+            np.expand_dims(xp / lengthscales, 0)
         return output_scale * np.exp(-0.5 * np.sum(diffs ** 2, axis=2))
 
     # Computes the negative log-marginal likelihood
@@ -62,7 +62,7 @@ class GP:
 
         alpha = np.linalg.solve(np.transpose(L), np.linalg.solve(L, y))
         NLML = 0.5 * np.matmul(np.transpose(y), alpha) + \
-               np.sum(np.log(np.diag(L))) + 0.5 * np.log(2. * np.pi) * N
+            np.sum(np.log(np.diag(L))) + 0.5 * np.log(2. * np.pi) * N
         return NLML[0, 0]
 
     # Minimizes the negative log-marginal likelihood
@@ -156,6 +156,9 @@ class Multifidelity_GP:
 
         self.hyp = self.init_params()
         print("Total number of parameters: %d" % (self.hyp.shape[0]))
+        print("Parameters: ", self.hyp)
+
+        np.random.seed(100)
 
         self.jitter = 1e-8
 
@@ -169,8 +172,13 @@ class Multifidelity_GP:
         self.idx_theta_H = np.arange(self.idx_theta_L[-1] + 1, hyp.shape[0])
 
         rho = np.array([1.0])
-        sigma_n = np.array([0.01, 0.01])
+        sigma_n = np.array([0.01,0.01])
         hyp = np.concatenate([hyp, rho, sigma_n])
+
+        # Override lengthscale initialization
+        hyp[2] = 4
+        hyp[5] = 4
+
         return hyp
 
     # A simple vectorized rbf kernel
@@ -178,7 +186,7 @@ class Multifidelity_GP:
         output_scale = hyp[1]
         lengthscales = hyp[2]
         diffs = np.expand_dims(x / lengthscales, 1) - \
-                np.expand_dims(xp / lengthscales, 0)
+            np.expand_dims(xp / lengthscales, 0)
         return output_scale * np.exp(-0.5 * np.sum(diffs ** 2, axis=2))
 
     # Computes the negative log-marginal likelihood
@@ -204,8 +212,8 @@ class Multifidelity_GP:
         y_H = y_H - mean_H
 
         # if the model behaves poorly, modify these lines below to get model convergence
-        #y_L = y_L - 0.45
-        #y_H = y_H - 0.25
+        # y_L = y_L - 2.5
+        # y_H = y_H - 2.5
 
         y = np.vstack((y_L, y_H))
 
@@ -216,7 +224,7 @@ class Multifidelity_GP:
         K_LL = self.kernel(X_L, X_L, theta_L) + np.eye(NL) * sigma_n_L
         K_LH = rho * self.kernel(X_L, X_H, theta_L)
         K_HH = rho ** 2 * self.kernel(X_H, X_H, theta_L) + \
-               self.kernel(X_H, X_H, theta_H) + np.eye(NH) * sigma_n_H
+            self.kernel(X_H, X_H, theta_H) + np.eye(NH) * sigma_n_H
         K = np.vstack((np.hstack((K_LL, K_LH)),
                        np.hstack((K_LH.T, K_HH))))
         L = np.linalg.cholesky(K + np.eye(N) * self.jitter)
@@ -224,7 +232,7 @@ class Multifidelity_GP:
 
         alpha = np.linalg.solve(np.transpose(L), np.linalg.solve(L, y))
         NLML = 0.5 * np.matmul(np.transpose(y), alpha) + \
-               np.sum(np.log(np.diag(L))) + 0.5 * np.log(2. * np.pi) * N
+            np.sum(np.log(np.diag(L))) + 0.5 * np.log(2. * np.pi) * N
         return NLML[0, 0]
 
     # Minimizes the negative log-marginal likelihood
@@ -256,7 +264,7 @@ class Multifidelity_GP:
         K_LL = self.kernel(X_L, X_L, theta_L) + np.eye(NL) * sigma_n_L
         K_LH = rho * self.kernel(X_L, X_H, theta_L)
         K_HH = rho ** 2 * self.kernel(X_H, X_H, theta_L) + \
-               self.kernel(X_H, X_H, theta_H) + np.eye(NH) * sigma_n_H
+            self.kernel(X_H, X_H, theta_H) + np.eye(NH) * sigma_n_H
         K = np.vstack((np.hstack((K_LL, K_LH)),
                        np.hstack((K_LH.T, K_HH))))
         self.L = np.linalg.cholesky(K + np.eye(N) * self.jitter)
@@ -280,7 +288,7 @@ class Multifidelity_GP:
 
         psi1 = rho * self.kernel(X_star, X_L, theta_L)
         psi2 = rho ** 2 * self.kernel(X_star, X_H, theta_L) + \
-               self.kernel(X_star, X_H, theta_H)
+            self.kernel(X_star, X_H, theta_H)
         psi = np.hstack((psi1, psi2))
 
         alpha = np.linalg.solve(np.transpose(L), np.linalg.solve(L, y))
@@ -288,7 +296,7 @@ class Multifidelity_GP:
 
         beta = np.linalg.solve(np.transpose(L), np.linalg.solve(L, psi.T))
         var_u_star = rho ** 2 * self.kernel(X_star, X_star, theta_L) + \
-                     self.kernel(X_star, X_star, theta_H) - np.matmul(psi, beta)
+            self.kernel(X_star, X_star, theta_H) - np.matmul(psi, beta)
 
         return pred_u_star, var_u_star
 
@@ -310,19 +318,19 @@ class Multifidelity_GP:
         K_LL = self.kernel(X_L, X_L, theta_L) + np.eye(NL) * sigma_n_L
         K_LH = rho * self.kernel(X_L, X_H, theta_L)
         K_HH = rho ** 2 * self.kernel(X_H, X_H, theta_L) + \
-               self.kernel(X_H, X_H, theta_H) + np.eye(NH) * sigma_n_H
+            self.kernel(X_H, X_H, theta_H) + np.eye(NH) * sigma_n_H
         K = np.vstack((np.hstack((K_LL, K_LH)),
                        np.hstack((K_LH.T, K_HH))))
         L = np.linalg.cholesky(K + np.eye(N) * self.jitter)
 
         psi1 = rho * self.kernel(x, X_L, theta_L)
         psi2 = rho ** 2 * self.kernel(x, X_H, theta_L) + \
-               self.kernel(x, X_H, theta_H)
+            self.kernel(x, X_H, theta_H)
         psi = np.hstack((psi1, psi2))
 
         beta = np.linalg.solve(np.transpose(L), np.linalg.solve(L, psi.T))
         var_u_star = rho ** 2 * self.kernel(x, x, theta_L) + \
-                     self.kernel(x, x, theta_H) - np.matmul(psi, beta)
+            self.kernel(x, x, theta_H) - np.matmul(psi, beta)
         return var_u_star
 
     #  Prints the negative log-marginal likelihood at each training step
@@ -342,5 +350,6 @@ class Multifidelity_GP:
 
     def get_max_var(self, Bounds, Thrd, c, X_L_new, X_H_new):
         Bounds = ([Bounds[0][0], Bounds[1][0]], [Bounds[0][1], Bounds[1][1]])
-        result = differential_evolution(self.get_neg_var, Bounds, args=(Thrd, c, X_L_new, X_H_new), init='random')
+        result = differential_evolution(self.get_neg_var, Bounds, args=(
+            Thrd, c, X_L_new, X_H_new), init='random')
         return result.x[None, :], -result.fun

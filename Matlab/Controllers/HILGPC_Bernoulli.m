@@ -40,8 +40,10 @@ rng(100);
 % configure HILGPC settings
 s2_threshold = 0; % parameter does not apply in this algorithm - only in Threshold algorithm
 recycle_human_prior = true;
-human_prior_filename = "prior6_confidence0.8.csv";
-hilgpc_settings = HILGPC_Settings(s2_threshold, recycle_human_prior, human_prior_filename);
+recycle_sample_prior = true;
+human_prior_filename = "dist7_hifi.csv";
+sample_prior_filename = "dist7_hifi.csv";
+hilgpc_settings = HILGPC_Settings(s2_threshold, recycle_human_prior, human_prior_filename, recycle_sample_prior, sample_prior_filename);
 
 % create HILGPC data object
 hilgpc_data = HILGPC_Data(environment, plotter, hilgpc_settings);
@@ -61,7 +63,7 @@ if ~recycle_human_prior
     hilgpc_data.SaveHumanPrior(human_prior_filename);
 end
 
-hilgpc_data.ComputeMFGP(mfgp_matlab);
+hilgpc_data.ComputeSFGP();
 hilgpc_data.VisualizeGP();
 
 % initialize explore-exploit random variable where high max uncertainty

@@ -357,9 +357,13 @@ classdef HILGPC_Data < handle
            % TestPoints is X_star
            X_star = obj.TestPoints;
            result = mfgp_matlab.predict_MFGP(obj.Model, X_star);
-           cr = cell(result);
-           mu = cell(cr{1});
-           var = cell(cr{2});
+           mu = double(result{1})';
+           var = double(result{2})';
+           hyp = exp(double(obj.Model.hyp))
+           
+           obj.TestMeans = mu;
+           obj.TestS2 = var;
+ 
         end
         
         function u = GetMaxUncertainty(obj)
@@ -381,7 +385,7 @@ classdef HILGPC_Data < handle
             hold on;
            
             
-            if obj.Plotter.ShowLofiTrainPoints
+            if obj.Plotter.ShowTrainPoints
                 % scatter ground truth from human
                 scatter3(obj.InputPoints(:,1) , obj.InputPoints(:,2), obj.InputMeans, 'black', 'filled');
                 
@@ -455,9 +459,11 @@ classdef HILGPC_Data < handle
             
             % save first two columns of (x,y) points without header row
             obj.InputPoints = prior{1:end, 1:2};
+            obj.LofiTrainPoints = obj.InputPoints;
             
             % save third column of means without header row
             obj.InputMeans = prior{1:end, 3};
+            obj.LofiTrainMeans = obj.InputMeans;
             
             % save user confidence in fourth column without header row
             obj.InputConfidence = prior{1, 4};
@@ -473,23 +479,23 @@ classdef HILGPC_Data < handle
             
             % iterate through input means and shift up and down to
             % upper/lower uncertainty bounds to create train means
-            for i = 1:size(obj.InputPoints, 1)
-                
-                % compute upper and lower bounds
-                mean = obj.InputMeans(i, 1);
-                shift = uncertainty * mean;
-                upper = mean + shift;
-                lower = mean - shift;
-                
-                % create lower bound train point on odd indices
-                obj.LofiTrainPoints(2*i-1, 1:2) = obj.InputPoints(i, 1:2);
-                obj.LofiTrainMeans(2*i-1, 1) = lower;
-                
-                % create upper bound train point on even indices
-                obj.LofiTrainPoints(2*i, 1:2) = obj.InputPoints(i, 1:2);
-                obj.LofiTrainMeans(2*i, 1) = upper;
-                
-            end
+%             for i = 1:size(obj.InputPoints, 1)
+%                 
+%                 % compute upper and lower bounds
+%                 mean = obj.InputMeans(i, 1);
+%                 shift = uncertainty * mean;
+%                 upper = mean + shift;
+%                 lower = mean - shift;
+%                 
+%                 % create lower bound train point on odd indices
+%                 obj.LofiTrainPoints(2*i-1, 1:2) = obj.InputPoints(i, 1:2);
+%                 obj.LofiTrainMeans(2*i-1, 1) = lower;
+%                 
+%                 % create upper bound train point on even indices
+%                 obj.LofiTrainPoints(2*i, 1:2) = obj.InputPoints(i, 1:2);
+%                 obj.LofiTrainMeans(2*i, 1) = upper;
+%                 
+%             end
             
         end
         
@@ -500,9 +506,11 @@ classdef HILGPC_Data < handle
             
             % save first two columns of (x,y) points without header row
             obj.SamplePoints = prior{1:end, 1:2};
+            obj.HifiTrainPoints = obj.SamplePoints;
             
             % save third column of means without header row
             obj.SampleMeans = prior{1:end, 3};
+            obj.HifiTrainMeans = obj.SampleMeans;
             
             % save user confidence in fourth column without header row
             obj.SampleConfidence = prior{1, 4};
@@ -518,23 +526,23 @@ classdef HILGPC_Data < handle
             
             % iterate through input means and shift up and down to
             % upper/lower uncertainty bounds to create train means
-            for i = 1:size(obj.SamplePoints, 1)
-                
-                % compute upper and lower bounds
-                mean = obj.SampleMeans(i, 1);
-                shift = uncertainty * mean;
-                upper = mean + shift;
-                lower = mean - shift;
-                
-                % create lower bound train point on odd indices
-                obj.HifiTrainPoints(2*i-1, 1:2) = obj.SamplePoints(i, 1:2);
-                obj.HifiTrainMeans(2*i-1, 1) = lower;
-                
-                % create upper bound train point on even indices
-                obj.HifiTrainPoints(2*i, 1:2) = obj.SamplePoints(i, 1:2);
-                obj.HifiTrainMeans(2*i, 1) = upper;
-                
-            end
+%             for i = 1:size(obj.SamplePoints, 1)
+%                 
+%                 % compute upper and lower bounds
+%                 mean = obj.SampleMeans(i, 1);
+%                 shift = uncertainty * mean;
+%                 upper = mean + shift;
+%                 lower = mean - shift;
+%                 
+%                 % create lower bound train point on odd indices
+%                 obj.HifiTrainPoints(2*i-1, 1:2) = obj.SamplePoints(i, 1:2);
+%                 obj.HifiTrainMeans(2*i-1, 1) = lower;
+%                 
+%                 % create upper bound train point on even indices
+%                 obj.HifiTrainPoints(2*i, 1:2) = obj.SamplePoints(i, 1:2);
+%                 obj.HifiTrainMeans(2*i, 1) = upper;
+%                 
+%             end
             
         end
         

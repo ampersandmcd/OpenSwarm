@@ -21,6 +21,7 @@ from scipy.optimize import differential_evolution
 # import seaborn as sns
 # from concorde.tsp import TSPSolver
 from scipy.spatial import distance_matrix
+import sys
 
 
 # np.random.seed(1234)
@@ -31,8 +32,8 @@ def train_MFGP(X_Lmem, y_Lmem, X_Hmem, y_Hmem):
     # Convert to numpy from memoryview objects passed by matlab
     X_L = np.asarray(X_Lmem)
     y_L = np.asarray(y_Lmem)
-    X_H = np.asarray(X_Hmem)
-    y_H = np.asarray(y_Hmem)
+    X_H = np.asarray(X_Hmem) # np.empty([0, 2])
+    y_H = np.asarray(y_Hmem) # np.empty([0, 1])
 
     # Reshape to n by 1 vectors
     y_L = y_L[:, np.newaxis]
@@ -50,8 +51,10 @@ def predict_MFGP(model, X_star):
     # Predict given test points
     pred_u_star, var_u_star = model.predict(X_star)
 
-    # Return mu and var
-    return matlab.double(pred_u_star.tolist())
+    u = pred_u_star.squeeze()
+    var = np.abs(np.diag(var_u_star.squeeze()))
+
+    return [u, var]
 
 # def tsp_solve(X):
 #     if X.shape[0] < 4:

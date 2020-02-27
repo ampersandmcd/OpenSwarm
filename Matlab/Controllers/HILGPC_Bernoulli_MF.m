@@ -31,8 +31,12 @@ messenger = Messenger(environment, plotter);
 
 % run GPML Startup
 %run('gpstartup.m');
+clear mfgp_matlab
+clear mfgp_base
 mfgp_matlab = py.importlib.import_module('mfgp_matlab');
+mfgp_base = py.importlib.import_module('gaussian_process');
 py.importlib.reload(mfgp_matlab);
+py.importlib.reload(mfgp_base);
 
 % set random seed for Gaussian reproducibility
 rng(100);
@@ -41,8 +45,8 @@ rng(100);
 s2_threshold = 0; % parameter does not apply in this algorithm - only in Threshold algorithm
 recycle_human_prior = true;
 recycle_sample_prior = true;
-human_prior_filename = "dist7_lofi.csv";
-sample_prior_filename = "dist7_hifi.csv";
+human_prior_filename = "../Data/dist7_lofi.csv";
+sample_prior_filename = "../Data/dist7_hifi.csv";
 hilgpc_settings = HILGPC_Settings(s2_threshold, recycle_human_prior, human_prior_filename, recycle_sample_prior, sample_prior_filename);
 
 % create HILGPC data object
