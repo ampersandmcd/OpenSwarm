@@ -11,21 +11,27 @@ classdef HILGPC_Data < handle
         Settings        % HILGPC_Settings dependency
         Plotter         % Plotting dependency
         
-        % Human-input data
+        % Human-input data (low-fidelity)
         InputPoints     % n rows by 2 col of human-input (x,y) points
         InputMeans      % n rows by 1 col of human-input means
         InputS2         % n rows by 1 col of human-input variances
-        InputConfidence % human-input confidence in measurements
+        InputConfidence % human-input lofi confidence in measurements
         
-        % Machine-sampled data
+        % Machine-sampled data (high-fidelity)
         SamplePoints    % n rows by 2 col of machine-sampled (x,y) points
         SampleMeans     % n rows by 1 col of machine-sampled means
         SampleS2        % n rows by 1 col of machine-sampled variances
+        SampleConfidence % sample-input lofi confidence in measurements
         
-        % Human-Machine combined data
-        TrainPoints     % concatenation of InputPoints and SamplePoints
-        TrainMeans      % concatenation of InputMeans and SampleMeans
-        TrainS2         % concatenation of InputS2 and SampleS2
+        % Human-Train data (low-fidelity)
+        LofiTrainPoints     % InputPoints doubled up for training
+        LofiTrainMeans      % InputMeans doubled up for training
+        LofiTrainS2         % InputS2 doubled up for training
+        
+        % Machine-train data (high-fidelity)
+        HifiTrainPoints     % SamplePoints doubled up for training
+        HifiTrainMeans      % SampleMeans doubled up for training
+        HifiTrainS2         % SampleS2 doubled up for training
         
         % Predicted data (used to visualize the GP)
         TestPoints      % n rows by 2 col of (x,y) points to evaluate model
@@ -84,12 +90,16 @@ classdef HILGPC_Data < handle
                 obj.RecycleHumanPrior();
             end
             
+            if obj.Settings.RecycleSamplePrior
+                obj.RecycleSamplePrior();
+            end
+            
         end
         
         function obj = GetHumanPrior(obj)
             % GETHumanPRIOR
             %   Take human input for estimations of mean and s2 to
-            %   initialize the prior for GP estimation
+            %   initialize the lofi prior for GP estimation
             
             h = obj.GetInputGUI();
             inputs = {};            % temp cell array to store input points as Point objects before casting to vector
@@ -128,14 +138,14 @@ classdef HILGPC_Data < handle
                 end
             end
             
-            
+                        
             % get user input confidence
             confidence = inputdlg('Enter confidence in your measurements as a decimal between 0 and 1');
             obj.InputConfidence = str2double(confidence{1});
-                        
+            
             
             % done with input -> convert inputs into [x,y] array and store
-            % into InputPoints, InputMeans, TrainPoints and TrainMeans
+            % into SamplePoints, SampleMeans, HifiTrainPoints and HifiTrainMeans
             
             % (note: do not include last point, as it is from clicking
             % done button)
@@ -151,10 +161,10 @@ classdef HILGPC_Data < handle
             end
             
             
-            % add 2 points to the training set each offset by one stddev 
+            % add 2 points to the training set each offset by one stddev
             % to properly train model mean and variance given imperfect
             % human input
-
+            
             % compute uncertainty
             uncertainty = 1 - obj.InputConfidence;
             
@@ -169,15 +179,108 @@ classdef HILGPC_Data < handle
                 lower = mean - shift;
                 
                 % create lower bound train point on odd indices
-                obj.TrainPoints(2*i-1, 1:2) = obj.InputPoints(i, 1:2);
-                obj.TrainMeans(2*i-1, 1) = lower;
+                obj.LofiTrainPoints(2*i-1, 1:2) = obj.InputPoints(i, 1:2);
+                obj.LofiTrainMeans(2*i-1, 1) = lower;
                 
                 % create upper bound train point on even indices
-                obj.TrainPoints(2*i, 1:2) = obj.InputPoints(i, 1:2);
-                obj.TrainMeans(2*i, 1) = upper;
+                obj.LofiTrainPoints(2*i, 1:2) = obj.InputPoints(i, 1:2);
+                obj.LofiTrainMeans(2*i, 1) = upper;
                 
             end
-                 
+        end
+            
+        function obj = GetSamplePrior(obj)
+            % GETSAMPLEPRIOR
+            %   Take human input for estimations of mean and s2 to
+            %   initialize the hifi-prior for mfgp
+            
+            h = obj.GetInputGUI();
+            inputs = {};            % temp cell array to store input points as Point objects before casting to vector
+            num_points = 0;
+            
+            while ishandle(h)
+                try
+                    % get input point
+                    [x, y] = ginput(1);
+                    point = Point(x, y);
+                    
+                    is_new_point = true;
+                    % if point is close to a preexisting point, increment
+                    % its count
+                    for i = 1:size(inputs, 1)
+                        other_point = inputs{i, 1};
+                        if point.Distance(other_point) < obj.Settings.DistanceThreshold
+                            % increment count of other point in temp_input cell array
+                            inputs{i, 2} = mod((inputs{i, 2} + 1), obj.Settings.MaxClicks+1);
+                            is_new_point = false;
+                            break;
+                        end
+                    end
+                    
+                    % add new point to temp_inputs if point is new
+                    if is_new_point
+                        inputs{num_points + 1, 1} = point;
+                        inputs{num_points + 1, 2} = 0; % initialize to 0 = no information
+                        num_points = num_points + 1;
+                    end
+                    
+                    % visualize input points
+                    obj.ScatterInputs(inputs);
+                catch
+                    % catch error when user clicks done box
+                end
+            end
+            
+            
+            
+            % get user input confidence
+            confidence = inputdlg('Enter confidence in your measurements as a decimal between 0 and 1');
+            obj.SampleConfidence = str2double(confidence{1});
+            
+            
+            % done with input -> convert inputs into [x,y] array and store
+            % into SamplePoints, SampleMeans, HifiTrainPoints and HifiTrainMeans
+            
+            % (note: do not include last point, as it is from clicking
+            % done button)
+            for i = 1:size(inputs, 1)-1
+                % store input point
+                point = inputs{i, 1};
+                [x,y] = point.ToPair();
+                
+                obj.SamplePoints(i, 1:2) = [x,y];
+                
+                % store input mean
+                obj.SampleMeans(i, 1) = inputs{i, 2};
+            end
+            
+            
+            % add 2 points to the training set each offset by one stddev
+            % to properly train model mean and variance given imperfect
+            % human input
+            
+            % compute uncertainty
+            uncertainty = 1 - obj.SampleConfidence;
+            
+            % iterate through input means and shift up and down to
+            % upper/lower uncertainty bounds to create train means
+            for i = 1:size(obj.SamplePoints, 1)
+                
+                % compute upper and lower bounds
+                mean = obj.SampleMeans(i, 1);
+                shift = uncertainty * mean;
+                upper = mean + shift;
+                lower = mean - shift;
+                
+                % create lower bound train point on odd indices
+                obj.HifiTrainPoints(2*i-1, 1:2) = obj.SamplePoints(i, 1:2);
+                obj.HifiTrainMeans(2*i-1, 1) = lower;
+                
+                % create upper bound train point on even indices
+                obj.HifiTrainPoints(2*i, 1:2) = obj.SamplePoints(i, 1:2);
+                obj.HifiTrainMeans(2*i, 1) = upper;
+                
+            end
         end
         
         function h = GetInputGUI(obj)
@@ -217,21 +320,36 @@ classdef HILGPC_Data < handle
             end
         end
         
-        function obj = ComputeGP(obj)
+        function obj = ComputeSFGP(obj)
+            % Compute single-fidelity GP using gpml library from MIT
             
             % optimize hyperparameters
             obj.Hyp = minimize(obj.Hyp, @gp, -obj.Settings.MaxEvals, @infGaussLik, obj.Settings.MeanFunction,...
-                obj.Settings.CovFunction, obj.Settings.LikFunction, obj.TrainPoints, obj.TrainMeans);
+                obj.Settings.CovFunction, obj.Settings.LikFunction, obj.LofiTrainPoints, obj.LofiTrainMeans);
             
             % compute on testpoints
             [m, s2] = gp(obj.Hyp, @infGaussLik, obj.Settings.MeanFunction,...
                 obj.Settings.CovFunction, obj.Settings.LikFunction, ...
-                obj.TrainPoints, obj.TrainMeans, obj.TestPoints);
+                obj.LofiTrainPoints, obj.LofiTrainMeans, obj.TestPoints);
             
             % save testpoint means and s2
             obj.TestMeans = m;
             obj.TestS2 = s2;
             
+        end
+        
+        function obj = ComputeMFGP(obj, mfgp_matlab)
+           % Compute multi-fidelity GP using mfgp code from Paris Parklas
+           
+           % Human input is low fidelity
+           X_L = obj.LofiTrainPoints;
+           y_L = obj.LofiTrainMeans;
+           
+           % Sampled input is high fidelity
+           X_H = obj.HifiTrainPoints;
+           y_H = obj.HifiTrainMeans;
+           
+           obj.Hyp = mfgp_matlab.train_MFGP(X_L, y_L, X_H, y_H);
         end
         
         function u = GetMaxUncertainty(obj)
@@ -253,13 +371,13 @@ classdef HILGPC_Data < handle
             hold on;
            
             
-            if obj.Plotter.ShowTrainPoints
+            if obj.Plotter.ShowLofiTrainPoints
                 % scatter ground truth from human
                 scatter3(obj.InputPoints(:,1) , obj.InputPoints(:,2), obj.InputMeans, 'black', 'filled');
                 
                 % scatter Gaussian-shifted training points based on ground
                 % truth of human
-                scatter3(obj.TrainPoints(:,1) , obj.TrainPoints(:,2), obj.TrainMeans(:,1), 'magenta', 'filled');
+                scatter3(obj.LofiTrainPoints(:,1) , obj.LofiTrainPoints(:,2), obj.LofiTrainMeans(:,1), 'magenta', 'filled');
             
                 if size(obj.SamplePoints, 1) > 0
                     % scatter points-to-sample in blue
@@ -318,11 +436,10 @@ classdef HILGPC_Data < handle
             axis([min(obj.TestPoints(:,1)), max(obj.TestPoints(:,1)), ...
                 min(obj.TestPoints(:,2)), max(obj.TestPoints(:,2))]);
             
-
-            
         end
         
         function RecycleHumanPrior(obj)
+            % Given hifi sample prior, reconstruct from CSV
             
             prior = readtable(obj.Settings.RecycleFilename);
             
@@ -355,21 +472,72 @@ classdef HILGPC_Data < handle
                 lower = mean - shift;
                 
                 % create lower bound train point on odd indices
-                obj.TrainPoints(2*i-1, 1:2) = obj.InputPoints(i, 1:2);
-                obj.TrainMeans(2*i-1, 1) = lower;
+                obj.LofiTrainPoints(2*i-1, 1:2) = obj.InputPoints(i, 1:2);
+                obj.LofiTrainMeans(2*i-1, 1) = lower;
                 
                 % create upper bound train point on even indices
-                obj.TrainPoints(2*i, 1:2) = obj.InputPoints(i, 1:2);
-                obj.TrainMeans(2*i, 1) = upper;
+                obj.LofiTrainPoints(2*i, 1:2) = obj.InputPoints(i, 1:2);
+                obj.LofiTrainMeans(2*i, 1) = upper;
                 
             end
             
         end
         
-        function SaveHumanPrior(obj, filename)
+        function RecycleSamplePrior(obj)
+            % Given hifi sample prior, reconstruct from CSV
             
-            prior = cat(2, obj.InputPoints, obj.InputMeans);
-            prior(1, 4) = obj.InputConfidence;
+            prior = readtable(obj.Settings.SampleFilename);
+            
+            % save first two columns of (x,y) points without header row
+            obj.SamplePoints = prior{1:end, 1:2};
+            
+            % save third column of means without header row
+            obj.SampleMeans = prior{1:end, 3};
+            
+            % save user confidence in fourth column without header row
+            obj.SampleConfidence = prior{1, 4};
+            
+            % build test set
+            
+            % add 2 points to the training set each offset by one stddev
+            % to properly train model mean and variance given imperfect
+            % human input
+            
+            % compute uncertainty
+            uncertainty = 1 - obj.SampleConfidence;
+            
+            % iterate through input means and shift up and down to
+            % upper/lower uncertainty bounds to create train means
+            for i = 1:size(obj.SamplePoints, 1)
+                
+                % compute upper and lower bounds
+                mean = obj.SampleMeans(i, 1);
+                shift = uncertainty * mean;
+                upper = mean + shift;
+                lower = mean - shift;
+                
+                % create lower bound train point on odd indices
+                obj.HifiTrainPoints(2*i-1, 1:2) = obj.SamplePoints(i, 1:2);
+                obj.HifiTrainMeans(2*i-1, 1) = lower;
+                
+                % create upper bound train point on even indices
+                obj.HifiTrainPoints(2*i, 1:2) = obj.SamplePoints(i, 1:2);
+                obj.HifiTrainMeans(2*i, 1) = upper;
+                
+            end
+            
+        end
+        
+        function SavePrior(obj, filename, fidelity)
+            
+            if fidelity == "low"
+                prior = cat(2, obj.InputPoints, obj.InputMeans);
+                prior(1, 4) = obj.InputConfidence;
+            else
+                prior = cat(2, obj.SamplePoints, obj.SampleMeans);
+                prior(1, 4) = obj.SampleConfidence;
+            end
+            
             
             file = fopen(filename, 'w');
             fprintf(file, "X,Y,Means,Confidence\n");

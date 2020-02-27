@@ -9,6 +9,10 @@ classdef HILGPC_Settings
         RecycleHumanPrior
         RecycleFilename
         
+        % Save sampled data?
+        RecycleSamplePrior
+        SampleFilename
+        
         % Settings for use in evaluation of GP
         GridResolution
         S2Threshold
@@ -24,12 +28,14 @@ classdef HILGPC_Settings
     end
     
     methods
-        function obj = HILGPC_Settings(threshold, recycle, filename)
+        function obj = HILGPC_Settings(threshold, recycle_human, human_filename, recycle_sample, sample_filename)
             %HILGPC_SETTINGS
             %   Instantiate settings object
             obj.S2Threshold = threshold;
-            obj.RecycleHumanPrior = recycle;
-            obj.RecycleFilename = filename;
+            obj.RecycleHumanPrior = recycle_human;
+            obj.RecycleFilename = human_filename;
+            obj.RecycleSamplePrior = recycle_sample;
+            obj.SampleFilename = sample_filename;
             
             % manually configure the following properties in this class
             % (they will not change often)

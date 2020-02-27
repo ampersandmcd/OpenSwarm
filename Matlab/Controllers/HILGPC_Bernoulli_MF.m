@@ -40,8 +40,10 @@ rng(100);
 % configure HILGPC settings
 s2_threshold = 0; % parameter does not apply in this algorithm - only in Threshold algorithm
 recycle_human_prior = true;
-human_prior_filename = "prior6_confidence0.8.csv";
-hilgpc_settings = HILGPC_Settings(s2_threshold, recycle_human_prior, human_prior_filename);
+recycle_sample_prior = true;
+human_prior_filename = "dist7_lofi.csv";
+sample_prior_filename = "dist7_hifi.csv";
+hilgpc_settings = HILGPC_Settings(s2_threshold, recycle_human_prior, human_prior_filename, recycle_sample_prior, sample_prior_filename);
 
 % create HILGPC data object
 hilgpc_data = HILGPC_Data(environment, plotter, hilgpc_settings);
@@ -56,9 +58,15 @@ hilgpc_planner = HILGPC_Planner(environment, hilgpc_settings, hilgpc_data);
 %% INPUT
 
 if ~recycle_human_prior
-    % if not recycling prior, get input and save it
+    % if not recycling human prior, get lofi input and save it
     hilgpc_data.GetHumanPrior();
-    hilgpc_data.SaveHumanPrior(human_prior_filename);
+    hilgpc_data.SavePrior(human_prior_filename, "low");
+end
+
+if ~recycle_sample_prior
+    % if not recycling sample prior, get hifi input and save it
+    hilgpc_data.GetSamplePrior();
+    hilgpc_data.SavePrior(sample_prior_filename, "high");
 end
 
 hilgpc_data.ComputeMFGP(mfgp_matlab);
