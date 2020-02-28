@@ -69,7 +69,7 @@ classdef HILGPC_Data < handle
     end
     
     methods
-        function obj = HILGPC_Data(environment, plotter, hilgpc_settings)
+        function obj = HILGPC_Data(environment, plotter, hilgpc_settings, mfgp_matlab)
             % HILGPC_DATA
             %    Set environment dependency and generate test points
             
@@ -106,6 +106,9 @@ classdef HILGPC_Data < handle
             
             % initialize number of samples to zero
             obj.NumSamples = 0;
+            
+            % initialize python model
+            obj.Model = mfgp_matlab.init_MFGP();
             
         end
         
@@ -368,8 +371,14 @@ classdef HILGPC_Data < handle
            X_H = obj.HifiTrainPoints;
            y_H = obj.HifiTrainMeans;
            
-           % Train model
-           obj.Model = mfgp_matlab.train_MFGP(X_L, y_L, X_H, y_H);
+           % Update model
+           if size(X_L, 1) > 1
+               obj.Model = mfgp_matlab.update_MFGP_L(obj.Model, X_L, y_L);
+           end
+           
+           if size(X_H, 1) > 1
+               obj.Model = mfgp_matlab.update_MFGP_H(obj.Model, X_H, y_H);
+           end
            
            % Predict using model
            % TestPoints is X_star
@@ -1231,12 +1240,20 @@ classdef HILGPC_Data < handle
            
            mat = zeros(obj.Environment.NumRobots, 2);
            map = obj.Environment.Positions;
+           oldmap = obj.Environment.Positions;
            
            for i = 1:obj.Environment.NumRobots
-               position = map(num2str(i));
-               x = position.Center.X;
-               y = position.Center.Y;
-               mat(i, 1:2) = [x,y];
+               try
+                   position = map(num2str(i));
+                   x = position.Center.X;
+                   y = position.Center.Y;
+                   mat(i, 1:2) = [x,y];
+               catch
+                   position = oldmap(num2str(i));
+                   x = position.Center.X;
+                   y = position.Center.Y;
+                   mat(i, 1:2) = [x,y];
+               end
            end
            
            % returns simple nRobots x 2 matrix of x_i,y_i in ith row           

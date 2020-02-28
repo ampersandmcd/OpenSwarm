@@ -58,7 +58,7 @@ classdef Plotter < handle
             % configure axes in which to plot: set title, aspect ratio and
             % axis limits
             subplot(2,2,1);
-            title('Webcam: Color');
+            title('Webcam');
             obj.ColorImageAxes = gca();
             obj.ColorImageAxes.DataAspectRatio = [1,1,1];
             axis(obj.ColorImageAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
@@ -96,6 +96,14 @@ classdef Plotter < handle
             title(obj.BWImageAxes, 'Webcam: BW');
             obj.BWImageAxes.Visible = 'off';
             axis(obj.BWImageAxes, 'xy');
+        end
+        
+        function obj = PlotLoss(obj, loss)
+           %PlotLoss: display loss on BWImageAxes (top right) 
+           plot(obj.BWImageAxes, loss);
+           title(obj.BWImageAxes, 'Loss vs. Time');
+           xlabel(obj.BWImageAxes, 'Iteration');
+           ylabel(obj.BWImageAxes, 'Loss');
         end
         
         function obj = PlotPositions(obj)

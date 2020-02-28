@@ -21,7 +21,7 @@ messenger = Messenger(environment, plotter);
 %% TEST
 while true
     
-    message = '<start><1>0,100</1><2>0,0</2><3>0,0</3><4>0,0</4><end>';
+    message = '<start><1>0,0</1><2>0,0</2><3>0,0</3><4>0,0</4><end>';
     
     % send test message
     messenger.SendMessage(message);

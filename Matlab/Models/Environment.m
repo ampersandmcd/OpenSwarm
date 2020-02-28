@@ -17,6 +17,7 @@ classdef Environment < handle
         % dynamic properties
         Iteration;      % counter variable tracking number of commands sent
         Positions;      % map<str(idnumber), Position> of robots in field
+        OldPositions;   % cached
         Targets;        % map<str(idnumber), Position> of targets for robots in field
         %TODO: add logging properties to environment
     end
@@ -46,7 +47,7 @@ classdef Environment < handle
             obj.UDPReception = true;
             obj.ConvergenceThreshold = 50;
             obj.FullSpeedThreshold = 300;
-            obj.Delay = 4;
+            obj.Delay = 5;
             obj.GoHome = true;
         end
                 

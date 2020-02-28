@@ -10,6 +10,8 @@
 #ifndef cfg
 #define cfg
 
+#include "IPAddress.h"
+
 class Configuration
 {
 public:

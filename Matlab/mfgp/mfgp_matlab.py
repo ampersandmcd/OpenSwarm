@@ -26,24 +26,46 @@ import sys
 
 # np.random.seed(1234)
 
-def train_MFGP(X_Lmem, y_Lmem, X_Hmem, y_Hmem):
-    # Train interface with matlab
+def init_MFGP():
+    X_L = np.empty([0, 2])
+    y_L = np.empty([0, 1])
+    X_H = np.empty([0, 2])
+    y_H = np.empty([0, 1])
+    model = Multifidelity_GP(X_L, y_L, X_H, y_H)
+    model.hyp = numpy.loadtxt('cov_hyp.txt')
+    return model
 
+def update_MFGP_L(model, X_Lmem, y_Lmem):
+    # Update interface with matlab
     # Convert to numpy from memoryview objects passed by matlab
     X_L = np.asarray(X_Lmem)
     y_L = np.asarray(y_Lmem)
-    X_H = np.asarray(X_Hmem) # np.empty([0, 2])
-    y_H = np.asarray(y_Hmem) # np.empty([0, 1])
+    X_H = model.X_H
+    y_H = model.y_H
 
     # Reshape to n by 1 vectors
-    y_L = y_L[:, np.newaxis]
-    y_H = y_H[:, np.newaxis]
-
-    # Construct and train model
-    model = Multifidelity_GP(X_L, y_L, X_H, y_H)
-    model.train()
+    y_L = y_L[:, None]
+    #y_H = y_H[:, None]
+    
+    # Update model
+    model.updt_info(X_L, y_L, X_H, y_H)
     return model
 
+def update_MFGP_H(model, X_Hmem, y_Hmem):
+    # Update interface with matlab
+    # Convert to numpy from memoryview objects passed by matlab
+    X_H = np.asarray(X_Hmem)
+    y_H = np.asarray(y_Hmem)
+    X_L = model.X_L
+    y_L = model.y_L
+
+    # Reshape to n by 1 vectors
+    #y_L = y_L[:, None]
+    y_H = y_H[:, None]
+    
+    # Update model
+    model.updt_info(X_L, y_L, X_H, y_H)
+    return model
 
 def predict_MFGP(model, X_star):
     # Prediction interface with matlab

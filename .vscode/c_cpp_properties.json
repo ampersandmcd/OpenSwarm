@@ -16,8 +16,14 @@
                 "C:/Program Files (x86)/Arduino/tools/**",
                 "C:/Users/mcdonald/Documents/OpenSwarm/Arduino/**",
                 "C:/Users/mcdonald/Documents/OpenSwarm/Arduino/src",
-                "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\**",
-                "C:\\Program Files (x86)\\Arduino\\tools\\**"
+                "C:/Program Files (x86)/Arduino/hardware/arduino/avr/**",
+                "C:/Program Files (x86)/Arduino/tools/**",
+                "C:/Users/andre/AppData/Local/Arduino15/packages/arduino/hardware/avr/1.6.23/**",
+                "C:/Users/andre/AppData/Local/Arduino15/packages/arduino/tools/**",
+                "D:/Documents/MSU/PA/OpenSwarm/Arduino/**",
+                "D:/Documents/MSU/PA/OpenSwarm/Arduino/Libraries/**",
+                "C:\\Users\\andre\\AppData\\Local\\Arduino15\\packages\\arduino\\hardware\\avr\\1.6.23\\**",
+                "C:\\Users\\andre\\AppData\\Local\\Arduino15\\packages\\arduino\\tools\\**"
             ],
             "forcedInclude": [
                 "C:/Program Files (x86)/Arduino/hardware/arduino/avr/cores/arduino/Arduino.h",
@@ -26,7 +32,9 @@
                 "C:/Users/mcdonald/Documents/OpenSwarm/Arduino/Libraries/WiFiEsp/**",
                 "C:/Users/mcdonald/Documents/OpenSwarm/Arduino/Libraries/MMEmotor/**",
                 "C:/Users/mcdonald/Documents/OpenSwarm/Arduino/src",
-                "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\cores\\arduino\\Arduino.h"
+                "C:/Program Files (x86)/Arduino/hardware/arduino/avr/cores/arduino/Arduino.h",
+                "C:/Users/andre/AppData/Local/Arduino15/packages/arduino/hardware/avr/1.6.23/cores/arduino/Arduino.h",
+                "C:\\Users\\andre\\AppData\\Local\\Arduino15\\packages\\arduino\\hardware\\avr\\1.6.23\\cores\\arduino\\Arduino.h"
             ],
             "intelliSenseMode": "msvc-x64",
             "compilerPath": "C:/Program Files (x86)/Microsoft Visual Studio/2017/Professional/VC/Tools/MSVC/14.16.27023/bin/Hostx64/x64/cl.exe",

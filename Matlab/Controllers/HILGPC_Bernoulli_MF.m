@@ -12,6 +12,7 @@
 % TEMP manually declare bounds [x,y,width,height]
 %bounds = [100, 100, 1000, 500];
 environment = Environment(4, bounds);
+environment.Iteration = 1;
 
 % initialize plot helper object
 plotter = Plotter(environment);
@@ -44,13 +45,13 @@ rng(100);
 % configure HILGPC settings
 s2_threshold = 0; % parameter does not apply in this algorithm - only in Threshold algorithm
 recycle_lofi_prior = true;
-recycle_hifi_prior = true;
-lofi_prior_filename = "../Data/collect_lofi.csv";
+recycle_hifi_prior = false;
+lofi_prior_filename = "../Data/lofi_train_dense.csv";
 hifi_prior_filename = "../Data/collect_hifi.csv";
 hilgpc_settings = HILGPC_Settings(s2_threshold, recycle_lofi_prior, lofi_prior_filename, recycle_hifi_prior, hifi_prior_filename);
 
 % create HILGPC data object
-hilgpc_data = HILGPC_Data(environment, plotter, hilgpc_settings);
+hilgpc_data = HILGPC_Data(environment, plotter, hilgpc_settings, mfgp_matlab);
 
 % create HILGPC actors
 hilgpc_planner = HILGPC_Planner(environment, hilgpc_settings, hilgpc_data);
@@ -64,11 +65,11 @@ if ~recycle_lofi_prior
     hilgpc_data.SavePrior(lofi_prior_filename, "low");
 end
 
-if ~recycle_hifi_prior
-    % if not recycling sample prior, get hifi input and save it
-    hilgpc_data.GetHifiPrior();
-    hilgpc_data.SavePrior(hifi_prior_filename, "high");
-end
+% if ~recycle_hifi_prior
+%     % if not recycling sample prior, get hifi input and save it
+%     hilgpc_data.GetHifiPrior();
+%     hilgpc_data.SavePrior(hifi_prior_filename, "high");
+% end
 
 hilgpc_data.ComputeMFGP(mfgp_matlab);
 hilgpc_data.VisualizeGP();
@@ -77,14 +78,13 @@ hilgpc_data.VisualizeGP();
 % yields low probability of exploitation and low max uncertainty yields
 % high probability of exploitation
 max_u = hilgpc_data.GetMaxUncertainty();
-k = 1; % tuning parameter greater than 0
-prob_exploit = exp(-k * max_u);
-
+% k = 1; % tuning parameter greater than 0
+prob_explore = 1;
 
 %% ITERATE
 
 
-while environment.Iteration() < 50
+while true
     
     % update current positions of robots in field
     vision.UpdatePositions();
@@ -94,33 +94,47 @@ while environment.Iteration() < 50
         continue
     end
     
-    % draw from a Bernoulli with prob_exploit where 1 => exploitation step
-    % and 0 => exploration step
-    % exploit = binornd(1, prob_exploit);
+    % Compute current centroids and max-variances
+    hilgpc_data.ComputeCentroidsNumerically();
+    hilgpc_data.ComputeCellMaxS2Numerically();
+    targets = containers.Map;
+    explore = eye(environment.NumRobots, 1);
     
-    
-    % force test
-    %
-    exploit = false;
-    %
-    %
-    
-    if exploit
-        % conduct one iteration of Lloyd's Algorithm to circumcenters
-        % (exploit)
-        hilgpc_data.ComputeCentroidsNumerically();
-        targets = hilgpc_data.Centroids;
-        environment.Targets = targets;
+    for i = 1:environment.NumRobots
+        % FOR EACH ROBOT, draw from a Bernoulli to decide explore
+        % or exploit
+        explore(i,1) = binornd(1, prob_explore);
         
-    else
-        % conduct max-uncertainty sample within Voronoi partitions
-        % (explore)
-        % hilgpc_data.ComputeCellMaxS2Numerically();
-        hilgpc_data.ComputeRandomSearch();
-        targets = hilgpc_data.RandomSample;
-        environment.Targets = targets;
-        
+        if explore(i,1)
+            % Set target for ith robot to max-S2 point
+            targets(num2str(i)) = hilgpc_data.MaxS2(num2str(i));
+        else
+            % Set target for ith robot to centroid point
+            targets(num2str(i)) = hilgpc_data.Centroids(num2str(i));
+        end
+    
     end
+    
+    explore
+    
+    environment.Targets = targets;
+    
+%     if ~explore
+%         % conduct one iteration of Lloyd's Algorithm to circumcenters
+%         % (exploit)
+%         hilgpc_data.ComputeCentroidsNumerically();
+%         targets = hilgpc_data.Centroids;
+%         environment.Targets = targets;
+%         
+%     else
+%         % conduct max-uncertainty sample within Voronoi partitions
+%         % (explore)
+%         hilgpc_data.ComputeCellMaxS2Numerically();
+%         %hilgpc_data.ComputeRandomSearch();
+%         targets = hilgpc_data.MaxS2;
+%         environment.Targets = targets;
+%         
+%     end
     
     % targets are now properly set    
     % until robots are converged on this round of targets, get and send directions
@@ -141,12 +155,16 @@ while environment.Iteration() < 50
         
         % update positions
         vision.UpdatePositions();
+        
+        % compute and visualize loss
+        hilgpc_data.ComputeLoss();
+        plotter.PlotLoss(hilgpc_data.Loss);
 
     end
     
     % robots are now converged on this round's targets
     % if this is an exploration step, sample and update the GP
-    if ~exploit
+    if sum(explore) > 0
         
         % Repeat until robots all send back a valid sample
         while ~messenger.Received
@@ -167,6 +185,11 @@ while environment.Iteration() < 50
         
         % Get positions for easy manipulation
         positions = hilgpc_data.PositionsToMatrix();
+        
+        % Keep only the entries of positions and samples for robots that
+        % were on an explore step to train the model
+        samples = samples(explore == 1)
+        positions = positions(explore == 1, :)
             
         % Update model with new samples
         hilgpc_data.UpdateModel(positions, samples);
@@ -174,15 +197,18 @@ while environment.Iteration() < 50
         % Recompute and revisualize model
         hilgpc_data.ComputeMFGP(mfgp_matlab);
         hilgpc_data.VisualizeGP();
-
-        % calibrate LDRs to match intensity
-        % scale LDRs to match GP levels
-        % add sample and sample location to GP sample points and sample means
-        % add sample and sample location to GP train points and train means
-        % recompute the GP
-        % visualize new GP
-        % update the probability of explore / exploit
     end
+    
+    % update the probability of explore / exploit linearly
+    new_u = hilgpc_data.GetMaxUncertainty()
+
+    % be sure our probability is not > 1
+    prob_explore = min(new_u / max_u, 1);
+    
+    % scale linearly out of maximum observed uncertainty
+%     if new_u > max_u
+%         max_u = new_u;
+%     end
     
     % update environment iteration tracker
     environment.Iterate();
@@ -191,8 +217,8 @@ end
 
 
 % Save recorded samples
-samples_file = "../Data/collect_MFGP.csv";
-hilgpc_data.SaveSamples(samples_file);
+% % samples_file = "../Data/collect_MFGP.csv";
+% % hilgpc_data.SaveSamples(samples_file);
 
 
 disp("end")

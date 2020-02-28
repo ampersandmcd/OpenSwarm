@@ -121,7 +121,10 @@ classdef Vision < handle
                 map = MatchPositions(obj, positions);
             end
             
-            % update Environment positions map
+            % update Environment positions map and cache
+            if length(obj.Environment.Positions) == obj.Environment.NumRobots
+                obj.Environment.OldPositions = obj.Environment.Positions;
+            end
             obj.Environment.Positions = map;
             obj.Updated = true;
 
@@ -327,7 +330,7 @@ classdef Vision < handle
             %   Determine optimal black/white cutoff
             %   threshold to properly deduce locations of robot visual anchors
             
-            threshold = 0.8;
+            threshold = 0.75;
             %TODO: actually implement auto-set algorithm
         end
         
@@ -335,7 +338,7 @@ classdef Vision < handle
            %GetAnchorSize: Determine optimal anchor size to properly deduce
            %    locations of robot visual anchors 
            
-           anchorSize = 5;
+           anchorSize = 8;
            %TODO: actually implement auto-set algorithm
         end
     end
