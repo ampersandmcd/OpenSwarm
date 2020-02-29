@@ -157,28 +157,33 @@ classdef Vision < handle
             %	is initialized in the form <ID, Position>.
             %	Use nearest neighbor search to set the ID
             %	of each new point to the closest from the previous frame.
-            
-            map = containers.Map;
-            
-            for i = 1:obj.Environment.NumRobots
-                newPosition = positions{i};
-                nearestNeighbor = 0;
-                nearestNeighborDistance = Inf;
-                for j = 1:obj.Environment.NumRobots
-                    candidate = obj.Environment.Positions(num2str(j));
-                    distance = newPosition.Center.Distance(candidate.Center);
-                    if  distance < nearestNeighborDistance
-                        nearestNeighbor = j;
-                        nearestNeighborDistance = distance;
+            try
+                
+                map = containers.Map;
+                
+                for i = 1:obj.Environment.NumRobots
+                    newPosition = positions{i};
+                    nearestNeighbor = 0;
+                    nearestNeighborDistance = Inf;
+                    for j = 1:obj.Environment.NumRobots
+                        candidate = obj.Environment.Positions(num2str(j));
+                        distance = newPosition.Center.Distance(candidate.Center);
+                        if  distance < nearestNeighborDistance
+                            nearestNeighbor = j;
+                            nearestNeighborDistance = distance;
+                        end
                     end
+                    
+                    % update position with ID of nearest neighbor, which is
+                    % this robot's old position
+                    map(num2str(nearestNeighbor)) = newPosition;
                 end
                 
-                % update position with ID of nearest neighbor, which is
-                % this robot's old position
-                map(num2str(nearestNeighbor)) = newPosition;
+                Utils.Verify(map.Count == obj.Environment.NumRobots, Utils.InvalidRobotCountMessage);
+                
+            catch
+                obj.Updated = false;
             end
-            
-            Utils.Verify(map.Count == obj.Environment.NumRobots, Utils.InvalidRobotCountMessage);
 
         end
         

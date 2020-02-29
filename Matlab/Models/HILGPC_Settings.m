@@ -13,6 +13,8 @@ classdef HILGPC_Settings
         RecycleHifiPrior
         HifiFilename
         
+        GroundTruthFilename
+        
         % Settings for use in evaluation of GP
         GridResolution
         S2Threshold
@@ -47,6 +49,8 @@ classdef HILGPC_Settings
             obj.MeanFunction = [];
             obj.CovFunction = @covSEiso;
             obj.LikFunction = @likGauss;
+            
+            obj.GroundTruthFilename = '../Data/lofi_train_dense.csv';
         end
     end
 end

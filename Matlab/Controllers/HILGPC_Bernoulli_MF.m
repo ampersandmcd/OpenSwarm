@@ -9,8 +9,7 @@
 
 % initialize environment settings
 % note: obtain bounds using Utils/ImageConfiguration.m
-% TEMP manually declare bounds [x,y,width,height]
-%bounds = [100, 100, 1000, 500];
+
 environment = Environment(4, bounds);
 environment.Iteration = 1;
 
@@ -44,9 +43,9 @@ rng(100);
 
 % configure HILGPC settings
 s2_threshold = 0; % parameter does not apply in this algorithm - only in Threshold algorithm
-recycle_lofi_prior = true;
+recycle_lofi_prior = false;
 recycle_hifi_prior = false;
-lofi_prior_filename = "../Data/lofi_train_dense.csv";
+lofi_prior_filename = "../Data/prior6_confidence0.8.csv";
 hifi_prior_filename = "../Data/collect_hifi.csv";
 hilgpc_settings = HILGPC_Settings(s2_threshold, recycle_lofi_prior, lofi_prior_filename, recycle_hifi_prior, hifi_prior_filename);
 
@@ -58,12 +57,12 @@ hilgpc_planner = HILGPC_Planner(environment, hilgpc_settings, hilgpc_data);
 
 
 %% INPUT
-
-if ~recycle_lofi_prior
-    % if not recycling human prior, get lofi input and save it
-    hilgpc_data.GetLofiPrior();
-    hilgpc_data.SavePrior(lofi_prior_filename, "low");
-end
+% 
+% if ~recycle_lofi_prior
+%     % if not recycling human prior, get lofi input and save it
+%     hilgpc_data.GetLofiPrior();
+%     hilgpc_data.SavePrior(lofi_prior_filename, "low");
+% end
 
 % if ~recycle_hifi_prior
 %     % if not recycling sample prior, get hifi input and save it
@@ -88,6 +87,7 @@ while true
     
     % update current positions of robots in field
     vision.UpdatePositions();
+    
     % skip this iteration if robot positions are invalid / not updated
     % properly by vision module
     if ~vision.Updated()
@@ -97,13 +97,19 @@ while true
     % Compute current centroids and max-variances
     hilgpc_data.ComputeCentroidsNumerically();
     hilgpc_data.ComputeCellMaxS2Numerically();
+    
+    % Plot current voronoi partitions and positions
+    voronoi = hilgpc_data.VoronoiCells;
+    plotter.PlotVoronoi(voronoi);
+    
+    % set targets for this iteration
     targets = containers.Map;
     explore = eye(environment.NumRobots, 1);
     
     for i = 1:environment.NumRobots
         % FOR EACH ROBOT, draw from a Bernoulli to decide explore
         % or exploit
-        explore(i,1) = binornd(1, prob_explore);
+         explore(i,1) = binornd(1, prob_explore);
         
         if explore(i,1)
             % Set target for ith robot to max-S2 point
@@ -150,15 +156,21 @@ while true
             pause(environment.Delay);
             
             % read back feedback
-            messenger.ReadMessage();
+                messenger.ReadMessage();
+            
+            % save current figure
+            plotter.SaveFigure();
+            
+            % save current data
+            hilgpc_data.SaveData();
         end
         
         % update positions
         vision.UpdatePositions();
-        
-        % compute and visualize loss
-        hilgpc_data.ComputeLoss();
-        plotter.PlotLoss(hilgpc_data.Loss);
+        plotter.PlotVoronoi(voronoi);
+       
+               
+        disp("Vaild Frame");
 
     end
     
@@ -184,15 +196,15 @@ while true
         samples = messenger.LastMessage;
         
         % Get positions for easy manipulation
-        positions = hilgpc_data.PositionsToMatrix();
+        targets = hilgpc_data.TargetsToMatrix();
         
         % Keep only the entries of positions and samples for robots that
         % were on an explore step to train the model
         samples = samples(explore == 1)
-        positions = positions(explore == 1, :)
+        targets = targets(explore == 1, :)
             
         % Update model with new samples
-        hilgpc_data.UpdateModel(positions, samples);
+        hilgpc_data.UpdateModel(targets, samples);
         
         % Recompute and revisualize model
         hilgpc_data.ComputeMFGP(mfgp_matlab);
@@ -203,13 +215,17 @@ while true
     new_u = hilgpc_data.GetMaxUncertainty()
 
     % be sure our probability is not > 1
-    prob_explore = min(new_u / max_u, 1);
+    prob_explore = min(2 * new_u / max_u, 1)
     
     % scale linearly out of maximum observed uncertainty
 %     if new_u > max_u
 %         max_u = new_u;
 %     end
-    
+
+    % compute and visualize loss
+    hilgpc_data.ComputeLoss();
+    plotter.PlotLoss(hilgpc_data.Loss);
+
     % update environment iteration tracker
     environment.Iterate();
     

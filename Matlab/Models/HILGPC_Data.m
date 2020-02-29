@@ -37,6 +37,10 @@ classdef HILGPC_Data < handle
         HifiTrainS2         % SampleS2 doubled up for training
         NumHifi
         
+        % Ground truth data
+        GroundTruthPoints     % SamplePoints doubled up for training
+        GroundTruthMeans      % SampleMeans doubled up for training
+        
         % Predicted data (used to visualize the GP)
         TestPoints      % n rows by 2 col of (x,y) points to evaluate model
         TestMeshX       % n x n matrix meshgrid of X testpoints
@@ -45,6 +49,9 @@ classdef HILGPC_Data < handle
         NormalizedTestMeans % n rows output by model normalized between 0 and 1
         TestS2          % n rows output by model
         TestFigure      % handle to visualization
+        
+        % Voronoi cells for plotting
+        VoronoiCells
         
         % Most recent centroid positions from weighted voronoi partition
         Centroids       % map<str(id), Position> of centroids of weighted voronoi partition
@@ -66,6 +73,8 @@ classdef HILGPC_Data < handle
         Hyp             % hyperparameters of GP model
         Model           % MFGP model from python code
         Loss            % Loss metric over time (sequence of entries)
+        
+        Idx
     end
     
     methods
@@ -106,9 +115,15 @@ classdef HILGPC_Data < handle
             
             % initialize number of samples to zero
             obj.NumSamples = 0;
+            obj.NumHifi = 0;
+           
             
             % initialize python model
             obj.Model = mfgp_matlab.init_MFGP();
+            
+            obj.LoadGroundTruth();
+            
+            obj.Idx = 0;
             
         end
         
@@ -393,6 +408,11 @@ classdef HILGPC_Data < handle
  
         end
         
+        function SaveData(obj)
+           save(sprintf('data/human-data-%d.mat', obj.Idx), 'obj');
+           obj.Idx = obj.Idx + 1;
+        end
+        
         function u = GetMaxUncertainty(obj)
             
             % return maximum uncertainty point in entire field
@@ -402,58 +422,60 @@ classdef HILGPC_Data < handle
         
         function obj = VisualizeGP(obj)
             
-            if isempty(obj.TestFigure)
-                obj.TestFigure = figure;
-            end
-            
-            ax = obj.TestFigure.CurrentAxes;
-            cla(ax);
-            axes(ax);
-            hold on;
-           
-            
-            if obj.Plotter.ShowTrainPoints
-                % scatter ground truth from human
-                scatter3(obj.InputPoints(:,1) , obj.InputPoints(:,2), obj.InputMeans, 'black', 'filled');
-                
-                % scatter Gaussian-shifted training points based on ground
-                % truth of human
-                scatter3(obj.LofiTrainPoints(:,1) , obj.LofiTrainPoints(:,2), obj.LofiTrainMeans(:,1), 'magenta', 'filled');
-            
-                if size(obj.SamplePoints, 1) > 0
-                    % scatter points-to-sample in blue
-                    scatter3(obj.SamplePoints(:,1) , obj.SamplePoints(:,2), obj.SampleMeans(:,1), 'blue', 'filled');
-                    legend_text = ["Human-input ground truth", ...
-                    "Gaussian-shifted train points to account for confidence", ...
-                    "Points to sample", "Mean", "Lower CI-95", "Upper CI-95"];
-                else
-                    legend_text = ["Human-input ground truth", ...
-                    "Gaussian-shifted train points to account for confidence", ...
-                    "Mean", "Lower CI-95", "Upper CI-95"];
-                end
-            else
-                legend_text = ["Mean", "Lower CI-95", "Upper CI-95"];
-            end
-            
-            % mesh GP surface
-            mesh(obj.TestMeshX, obj.TestMeshY, reshape(obj.TestMeans, size(obj.TestMeshX, 1), []));
-            colormap(gray);
-            
-            % mesh upper and lower 95CI bounds
-            lower_bound = obj.TestMeans - 2*sqrt(obj.TestS2);
-            upper_bound = obj.TestMeans + 2*sqrt(obj.TestS2);
-            mesh(obj.TestMeshX, obj.TestMeshY, reshape(lower_bound, size(obj.TestMeshX, 1), []),...
-                'FaceColor', [0,1,1], 'EdgeColor', 'blue', 'FaceAlpha', 0.3);
-            mesh(obj.TestMeshX, obj.TestMeshY, reshape(upper_bound, size(obj.TestMeshX, 1), []),...
-                'FaceColor', [0,1,0.5], 'EdgeColor', 'green', 'FaceAlpha', 0.3);
-        
-            title(sprintf("GP Function Estimate", obj.Settings.S2Threshold));
-            legend(legend_text, 'Location', 'Northeast');
-            
-            view(3)
-            xlim auto;
-            ylim auto;
-            zlim auto;
+            obj.Plotter.PlotMean(obj.TestMeshX, obj.TestMeshY, obj.TestMeans);
+            obj.Plotter.PlotVar(obj.TestMeshX, obj.TestMeshY, obj.TestS2);
+%             if isempty(obj.TestFigure)
+%                 obj.TestFigure = figure;
+%             end
+%             
+%             ax = obj.TestFigure.CurrentAxes;
+%             cla(ax);
+%             axes(ax);
+%             hold on;
+%            
+%             
+%             if obj.Plotter.ShowTrainPoints
+%                 % scatter ground truth from human
+%                 scatter3(obj.InputPoints(:,1) , obj.InputPoints(:,2), obj.InputMeans, 'black', 'filled');
+%                 
+%                 % scatter Gaussian-shifted training points based on ground
+%                 % truth of human
+%                 scatter3(obj.LofiTrainPoints(:,1) , obj.LofiTrainPoints(:,2), obj.LofiTrainMeans(:,1), 'magenta', 'filled');
+%             
+%                 if size(obj.SamplePoints, 1) > 0
+%                     % scatter points-to-sample in blue
+%                     scatter3(obj.SamplePoints(:,1) , obj.SamplePoints(:,2), obj.SampleMeans(:,1), 'blue', 'filled');
+%                     legend_text = ["Human-input ground truth", ...
+%                     "Gaussian-shifted train points to account for confidence", ...
+%                     "Points to sample", "Mean", "Lower CI-95", "Upper CI-95"];
+%                 else
+%                     legend_text = ["Human-input ground truth", ...
+%                     "Gaussian-shifted train points to account for confidence", ...
+%                     "Mean", "Lower CI-95", "Upper CI-95"];
+%                 end
+%             else
+%                 legend_text = ["Mean", "Lower CI-95", "Upper CI-95"];
+%             end
+%             
+%             % mesh GP surface
+%             mesh(obj.TestMeshX, obj.TestMeshY, reshape(obj.TestMeans, size(obj.TestMeshX, 1), []));
+%             colormap(gray);
+%             
+%             % mesh upper and lower 95CI bounds
+%             lower_bound = obj.TestMeans - 2*sqrt(obj.TestS2);
+%             upper_bound = obj.TestMeans + 2*sqrt(obj.TestS2);
+%             mesh(obj.TestMeshX, obj.TestMeshY, reshape(lower_bound, size(obj.TestMeshX, 1), []),...
+%                 'FaceColor', [0,1,1], 'EdgeColor', 'blue', 'FaceAlpha', 0.3);
+%             mesh(obj.TestMeshX, obj.TestMeshY, reshape(upper_bound, size(obj.TestMeshX, 1), []),...
+%                 'FaceColor', [0,1,0.5], 'EdgeColor', 'green', 'FaceAlpha', 0.3);
+%         
+%             title(sprintf("GP Function Estimate", obj.Settings.S2Threshold));
+%             legend(legend_text, 'Location', 'Northeast');
+%             
+%             view(3)
+%             xlim auto;
+%             ylim auto;
+%             zlim auto;
         end
         
         function UpdateModel(obj, positions, samples)
@@ -515,7 +537,7 @@ classdef HILGPC_Data < handle
             view(2);
             
             % Set colormap
-            colormap('hot');
+            colormap('gray');
             
             % Fill mesh with color and set background to black
             s.FaceColor = 'flat';
@@ -524,6 +546,18 @@ classdef HILGPC_Data < handle
             % Autoscale axes and save
             axis([min(obj.TestPoints(:,1)), max(obj.TestPoints(:,1)), ...
                 min(obj.TestPoints(:,2)), max(obj.TestPoints(:,2))]);
+            
+        end
+        
+        function LoadGroundTruth(obj)
+            
+            prior = readtable(obj.Settings.GroundTruthFilename);
+            
+            % save first two columns of (x,y) points without header row
+            obj.GroundTruthPoints = prior{1:end, 1:2};
+            
+            % save third column of means without header row
+            obj.GroundTruthMeans = prior{1:end, 3};
             
         end
         
@@ -907,28 +941,29 @@ classdef HILGPC_Data < handle
                 px, py, corners, tx, ty, f_samples);
             centroids = [new_px, new_py];
 
-            % Visualize Voronoi partitions and centroids
-            ax = obj.Plotter.AuxiliaryAxes;
-            cla(ax);
-            hold(ax, 'on');
-            
-            for i = 1:obj.Environment.NumRobots
-                color = obj.Plotter.RobotColors(i,:);
-                size = obj.Plotter.DotSize;
-                pgon = polygons{i,1};
-                plot(ax, polyshape(pgon(:,1), pgon(:,2)));
-                scatter(ax, centroids(i,1), centroids(i,2), size, color, 'filled');
-            end
-            
-            
-            % Rescale axes and set title
-            title(ax, 'Exploit: Centroid Step');
-            ax.DataAspectRatio = [1,1,1];
+%             % Visualize Voronoi partitions and centroids
+%             ax = obj.Plotter.AuxiliaryAxes;
+%             cla(ax);
+%             hold(ax, 'on');
+%             
+%             for i = 1:obj.Environment.NumRobots
+%                 color = obj.Plotter.RobotColors(i,:);
+%                 size = obj.Plotter.DotSize;
+%                 pgon = polygons{i,1};
+%                 plot(ax, polyshape(pgon(:,1), pgon(:,2)));
+%                 scatter(ax, centroids(i,1), centroids(i,2), size, color, 'filled');
+%             end
+%             
+%             
+%             % Rescale axes and set title
+%             title(ax, 'Exploit: Centroid Step');
+%             ax.DataAspectRatio = [1,1,1];
                         
             % Step 6: Set CentroidsMatrix and Centroids fields with helper
             % method
             obj.CentroidsMatrix = centroids;
-            obj.Centroids = obj.MatrixToPositions(centroids);          
+            obj.Centroids = obj.MatrixToPositions(centroids);      
+            obj.VoronoiCells = polygons;
             
         end
         
@@ -1058,9 +1093,9 @@ classdef HILGPC_Data < handle
             
             
             % Configure visualization for debugging
-            ax = obj.Plotter.AuxiliaryAxes;
-            cla(ax);
-            hold(ax, 'on');
+%             ax = obj.Plotter.AuxiliaryAxes;
+%             cla(ax);
+%             hold(ax, 'on');
             
             % Get current robot positions
             positions = obj.PositionsToMatrix();          
@@ -1079,16 +1114,18 @@ classdef HILGPC_Data < handle
             % Step 2: Find uncertainty-maximizing points in each
             % Voronoi partition and add to set to be sampled
             max_s2_points = zeros(obj.Environment.NumRobots, 2);
+            polygons = {};
             
             for i = 1:obj.Environment.NumRobots
                 
                 % Iterate through each Voronoi cell polygon
                 cell = cells{i};
                 polygon = vertices(cell, :); % subset the vertices of the polygon bounding just this cell
+                polygons{i,1} = polygon;
                 
                 % Get indices of test points in this Voronoi cell polygon
                 in_indices = inpolygon(obj.TestPoints(:,1), obj.TestPoints(:,2), polygon(:,1), polygon(:,2));
-
+                
                 % Get coordinates of points in this Voronoi cell polygon
                 in_points = obj.TestPoints(in_indices, :);
                 
@@ -1103,20 +1140,20 @@ classdef HILGPC_Data < handle
                 max_s2_points(i, :) = max_s2_point;
               
                 % Visualize
-                color = obj.Plotter.RobotColors(i,:);
-                size = obj.Plotter.DotSize;
-                plot(ax, polyshape(polygon(:,1), polygon(:,2)), 'FaceColor', color);
-                scatter(ax, max_s2_point(:,1), max_s2_point(:,2), size, color, 'filled');
+%                 color = obj.Plotter.RobotColors(i,:);
+%                 size = obj.Plotter.DotSize;
+%                 plot(ax, polyshape(polygon(:,1), polygon(:,2)), 'FaceColor', color);
+%                 scatter(ax, max_s2_point(:,1), max_s2_point(:,2), size, color, 'filled');
             end
             
             % Rescale axes and set title
-            title(ax, 'Explore: MaxS2 Step');
-            ax.DataAspectRatio = [1,1,1];
+%             title(ax, 'Explore: MaxS2 Step');
+%             ax.DataAspectRatio = [1,1,1];
 
             % Step 3: Set MaxS2Matrix and MaxS2 fields with helper
             obj.MaxS2Matrix = max_s2_points;
             obj.MaxS2 = obj.MatrixToPositions(max_s2_points);  
-
+            obj.VoronoiCells = polygons;
         end
         
         function ComputeRandomSearch(obj)
@@ -1211,11 +1248,11 @@ classdef HILGPC_Data < handle
                 polygon = vertices(cell, :); % subset the vertices of the polygon bounding just this cell
                 
                 % Get indices of test points in this Voronoi cell polygon
-                in_indices = inpolygon(obj.TestPoints(:,1), obj.TestPoints(:,2), polygon(:,1), polygon(:,2));
+                in_indices = inpolygon(obj.GroundTruthPoints(:,1), obj.GroundTruthPoints(:,2), polygon(:,1), polygon(:,2));
 
                 % Get coordinates of points in this Voronoi cell polygon
-                in_points = obj.TestPoints(in_indices, :);
-                in_means = obj.TestMeans(in_indices, :);
+                in_points = obj.GroundTruthPoints(in_indices, :);
+                in_means = obj.GroundTruthMeans(in_indices, :);
                                 
                 % Compute loss by squared distance times f integrated on V
                 dist_sq = power((in_points(:,1) - positions(i,1)), 2) + power((in_points(:,2) - positions(i,2)), 2); %n x 1 vector
@@ -1233,6 +1270,25 @@ classdef HILGPC_Data < handle
 
            
         end
+        
+        function mat = TargetsToMatrix(obj)
+           % Helper function to convert environment.Positions map to a simple
+           % nRobots x 2 matrix of x,y positions
+           
+           mat = zeros(obj.Environment.NumRobots, 2);
+           map = obj.Environment.Targets;
+           
+           for i = 1:obj.Environment.NumRobots
+               
+               target = map(num2str(i));
+               x = target.Center.X;
+               y = target.Center.Y;
+               mat(i, 1:2) = [x,y];
+               
+           end
+           
+        end
+        
        
         function mat = PositionsToMatrix(obj)
            % Helper function to convert environment.Positions map to a simple

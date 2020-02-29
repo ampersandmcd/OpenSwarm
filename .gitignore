@@ -1,2 +1,19 @@
 # Matlab auto-save files
 *.asv
+
+# Data from experimental mfgp runs
+data_0/
+data_1/
+data_2/
+data_3/
+data_4/
+data_5/
+data/
+
+figures_0/
+figures_1/
+figures_2/
+figures_3/
+figures_4/
+figures_5/
+figures/
