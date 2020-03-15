@@ -9,4 +9,5 @@
     "editor.formatOnPaste": true,
     "editor.formatOnSave": true,
     "editor.formatOnType": true,
+    "python.pythonPath": "C:\\Users\\andre\\AppData\\Local\\Programs\\Python\\Python38-32\\python.exe",
 }

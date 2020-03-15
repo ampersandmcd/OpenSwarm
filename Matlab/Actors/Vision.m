@@ -14,19 +14,24 @@ classdef Vision < handle
         ColorImage;     % stores latest Color image
         BWImage;        % stores latest BW image
         Updated;        % indicates whether positions were properly updated on most recent UpdatePositions() call
+        Transformation; % stores transformation matrix to flatten image
+        Bounds;         % stores bounds to crop transformed image to
     
     end
     
     methods
-        function obj = Vision(inputEnvironment, inputPlotter)
+        function obj = Vision(inputEnvironment, inputPlotter, transformation, bounds)
             %Vision: 
             %   Construct and configure a vision object
             
             obj.Environment = inputEnvironment;
             obj.Plotter = inputPlotter;
             obj.Updated = false;
+            obj.Transformation = transformation;
+            obj.Bounds = bounds;
             obj = obj.StartCamera();
             obj = obj.PurgeCamera();
+            
         end
         
         function obj = StartCamera(obj)
@@ -47,6 +52,12 @@ classdef Vision < handle
             obj.AnchorSize = obj.GetAnchorSize();
         end
         
+        function img = TransformedImage(obj)
+            raw = getsnapshot(obj.Camera);
+            flat = imwarp(raw, obj.Transformation);
+            img = imcrop(flat, obj.Bounds);
+        end
+        
         function obj = PurgeCamera(obj)
            %PurgeCamera: Take series of images to ensure autofocus is 
            %    functioning properly
@@ -58,7 +69,7 @@ classdef Vision < handle
             %GetColorImage: 
             %   Takes and plots color image with environment camera
             
-            obj.ColorImage = getsnapshot(obj.Camera);
+            obj.ColorImage = obj.TransformedImage();
             obj.Plotter = obj.Plotter.PlotColorImage(obj.ColorImage);
         end
         
@@ -110,7 +121,10 @@ classdef Vision < handle
                 map = MatchPositions(obj, positions);
             end
             
-            % update Environment positions map
+            % update Environment positions map and cache
+            if length(obj.Environment.Positions) == obj.Environment.NumRobots
+                obj.Environment.OldPositions = obj.Environment.Positions;
+            end
             obj.Environment.Positions = map;
             obj.Updated = true;
 
@@ -143,28 +157,33 @@ classdef Vision < handle
             %	is initialized in the form <ID, Position>.
             %	Use nearest neighbor search to set the ID
             %	of each new point to the closest from the previous frame.
-            
-            map = containers.Map;
-            
-            for i = 1:obj.Environment.NumRobots
-                newPosition = positions{i};
-                nearestNeighbor = 0;
-                nearestNeighborDistance = Inf;
-                for j = 1:obj.Environment.NumRobots
-                    candidate = obj.Environment.Positions(num2str(j));
-                    distance = newPosition.Center.Distance(candidate.Center);
-                    if  distance < nearestNeighborDistance
-                        nearestNeighbor = j;
-                        nearestNeighborDistance = distance;
+            try
+                
+                map = containers.Map;
+                
+                for i = 1:obj.Environment.NumRobots
+                    newPosition = positions{i};
+                    nearestNeighbor = 0;
+                    nearestNeighborDistance = Inf;
+                    for j = 1:obj.Environment.NumRobots
+                        candidate = obj.Environment.Positions(num2str(j));
+                        distance = newPosition.Center.Distance(candidate.Center);
+                        if  distance < nearestNeighborDistance
+                            nearestNeighbor = j;
+                            nearestNeighborDistance = distance;
+                        end
                     end
+                    
+                    % update position with ID of nearest neighbor, which is
+                    % this robot's old position
+                    map(num2str(nearestNeighbor)) = newPosition;
                 end
                 
-                % update position with ID of nearest neighbor, which is
-                % this robot's old position
-                map(num2str(nearestNeighbor)) = newPosition;
+                Utils.Verify(map.Count == obj.Environment.NumRobots, Utils.InvalidRobotCountMessage);
+                
+            catch
+                obj.Updated = false;
             end
-            
-            Utils.Verify(map.Count == obj.Environment.NumRobots, Utils.InvalidRobotCountMessage);
 
         end
         
@@ -205,8 +224,8 @@ classdef Vision < handle
             % NOTE: must VERTICALLY FLIP BWImage before finding blobs due
             % to [row, column] vs. [x, y] notation; row in BW / logical
             % matrix is opposite of y value (low y = high row #)
-            flippedBW = flip(obj.BWImage, 1);    % flip on dimension 1
-            [anchorBlobs, numBlobs] = bwlabel(flippedBW);
+%             flippedBW = flip(obj.BWImage, 1);    % flip on dimension 1
+            [anchorBlobs, numBlobs] = bwlabel(obj.BWImage);
             
             % check that proper number of blobs were found
             Utils.Verify(numBlobs == obj.Environment.NumRobots * obj.Environment.AnchorsPerRobot, Utils.InvalidAnchorCountMessage);
@@ -316,7 +335,7 @@ classdef Vision < handle
             %   Determine optimal black/white cutoff
             %   threshold to properly deduce locations of robot visual anchors
             
-            threshold = 0.95;
+            threshold = 0.75;
             %TODO: actually implement auto-set algorithm
         end
         
@@ -324,7 +343,7 @@ classdef Vision < handle
            %GetAnchorSize: Determine optimal anchor size to properly deduce
            %    locations of robot visual anchors 
            
-           anchorSize = 10;
+           anchorSize = 8;
            %TODO: actually implement auto-set algorithm
         end
     end

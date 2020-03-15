@@ -22,6 +22,11 @@ classdef Point
         function distance = DistanceFromOrigin(obj)
            distance = sqrt(obj.X^2 + obj.Y^2); 
         end
+        
+        function [x,y] = ToPair(obj)
+            x = obj.X;
+            y = obj.Y;
+        end
     end
 end
 

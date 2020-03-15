@@ -4,10 +4,15 @@ classdef Plotter < handle
     properties
         Environment;        % Environment object dependency
         
+        RobotColors;        % colormap to plot individual robots
+        
         LocationAxes;       % axes on which to plot robot locations
         ColorImageAxes;     % axes on which to show current color image
         BWImageAxes;        % axes on which to show current bw image
-        LightmapAxes;       % axes on which to show current lightmap
+        MeanAxes;
+        VarAxes;
+        LossAxes;
+        AuxiliaryAxes;      % auxiliary axes
         
         XLabelOffset;       % x-offset distance for labels on plots
         YLabelOffset;       % y-offset distance for labels on plots
@@ -23,6 +28,11 @@ classdef Plotter < handle
         
         HeadingColor;       % color in which to plot heading vectors
         HeadingTextColor;   % color in which to label robot headings
+        
+        ShowTrainPoints     % Boolean setting to show training points
+        
+        Figure
+        Idx
     end
     
     methods
@@ -33,9 +43,11 @@ classdef Plotter < handle
             obj.Environment = inputEnvironment;
             
             % configure preferences
+            obj.RobotColors = lines(obj.Environment.NumRobots);
+            
             obj.XLabelOffset = 50;
             obj.YLabelOffset = 50;
-            obj.DotSize = 36;
+            obj.DotSize = 72;
             obj.HeadingScalar = 5;
             
             obj.PositionColor = 'blue';
@@ -47,31 +59,46 @@ classdef Plotter < handle
             obj.HeadingColor = 'blue';
             obj.HeadingTextColor = 'blue';
             
+            obj.ShowTrainPoints = false;
+            
+            obj.Figure = figure;
+            obj.Idx = 0;
+            
             % configure axes in which to plot: set title, aspect ratio and
             % axis limits
-            subplot(2,2,1);
-            title('Webcam: Color');
+            subplot(3,2,1);
+            title('Webcam');
             obj.ColorImageAxes = gca();
             obj.ColorImageAxes.DataAspectRatio = [1,1,1];
             axis(obj.ColorImageAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
-            
-            subplot(2,2,2);
-            title('Webcam: BW');
-            obj.BWImageAxes = gca();
-            obj.BWImageAxes.DataAspectRatio = [1,1,1];
-            axis(obj.BWImageAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
-            
-            subplot(2,2,3);
+                       
+            subplot(3,2,2);
             title('Robot Locations');
             obj.LocationAxes = gca();
             obj.LocationAxes.DataAspectRatio = [1,1,1];
             axis(obj.LocationAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
             
-            subplot(2,2,4);
-            title('Auxiliary');
-            obj.LightmapAxes = gca();
-            obj.LightmapAxes.DataAspectRatio = [1,1,1];
-            axis(obj.LightmapAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
+            subplot(3,2,3);
+            title('Posterior Mean');
+            obj.MeanAxes = gca();
+            obj.MeanAxes.DataAspectRatio = [1,1,1];
+            axis(obj.MeanAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
+            
+            subplot(3,2,4);
+            title('Posterior Variance');
+            obj.VarAxes = gca();
+            obj.VarAxes.DataAspectRatio = [1,1,1];
+            axis(obj.VarAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
+            
+            subplot(3,2,[5,6]);
+            title('Loss Function');
+            obj.LossAxes = gca();
+            obj.LossAxes.DataAspectRatio = [1,1,1];
+            
+            figure;
+            gcf();
+            obj.BWImageAxes = gca();
+            
         end
         
         function obj = PlotColorImage(obj, img)
@@ -79,6 +106,7 @@ classdef Plotter < handle
             imshow(img, 'Parent', obj.ColorImageAxes);
             title(obj.ColorImageAxes, 'Webcam: Color');
             obj.ColorImageAxes.Visible = 'off';
+            axis(obj.ColorImageAxes, 'xy');
         end
         
         function obj = PlotBWImage(obj, img)
@@ -86,6 +114,46 @@ classdef Plotter < handle
             imshow(img, 'Parent', obj.BWImageAxes);
             title(obj.BWImageAxes, 'Webcam: BW');
             obj.BWImageAxes.Visible = 'off';
+            axis(obj.BWImageAxes, 'xy');
+        end
+        
+        function obj = PlotLoss(obj, loss)
+           %PlotLoss: display loss on LossAxes 
+           plot(obj.LossAxes, loss);
+           title(obj.LossAxes, 'Loss by Iteration');
+           xlabel(obj.LossAxes, 'Iteration');
+           ylabel(obj.LossAxes, 'Loss');
+        end
+        
+        function obj = PlotMean(obj, meshX, meshY, mean)
+           %PlotLoss: display loss on LossAxes 
+           mesh(obj.MeanAxes, meshX, meshY, reshape(mean, size(meshX, 1), []));
+           colormap('jet');
+           view(obj.MeanAxes, 2);
+           title(obj.MeanAxes, 'Posterior Mean');
+        end
+        
+        function obj = PlotVar(obj, meshX, meshY, var)
+           %PlotLoss: display loss on LossAxes 
+           mesh(obj.VarAxes, meshX, meshY, reshape(var, size(meshX, 1), []));
+           colormap('jet');
+           view(obj.VarAxes, 2);
+           title(obj.VarAxes, 'Posterior Variance');
+        end
+        
+        function obj = PlotVoronoi(obj, polygons)
+            
+            for i = 1:obj.Environment.NumRobots
+               polygon = polygons{i,1};
+               color = obj.RobotColors(i,:);
+               plot(obj.LocationAxes, polyshape(polygon(:,1), polygon(:,2)), 'FaceColor', color);
+            end
+            
+        end
+        
+        function SaveFigure(obj)
+            savefig(obj.Figure, sprintf('figures/human-figure-%d.fig', obj.Idx));
+            obj.Idx = obj.Idx + 1;
         end
         
         function obj = PlotPositions(obj)
@@ -93,36 +161,40 @@ classdef Plotter < handle
             %   Plot current positions from Environment.Positions map.
             %   Plot target positions from Environment.Targets map.
             
-            % clean up
-            hold(obj.LocationAxes, 'off');
-            cla(obj.LocationAxes);
-            hold(obj.LocationAxes, 'on');
-            
-            % for each robot and its target in the positions map, plot and label
-            for i = 1:obj.Environment.NumRobots
-                position = obj.Environment.Positions(num2str(i));
-                target = obj.Environment.Targets(num2str(i));
+            try
+                % clean up
+                hold(obj.LocationAxes, 'off');
+                cla(obj.LocationAxes);
+                hold(obj.LocationAxes, 'on');
                 
-                % plot and label position, heading, (x,y) coords:
-                scatter(obj.LocationAxes, position.Center.X, position.Center.Y, obj.DotSize, obj.PositionColor);
-                quiver(obj.LocationAxes, position.Center.X, position.Center.Y, (position.Nose.X - position.Center.X) * obj.HeadingScalar, (position.Nose.Y - position.Center.Y) * obj.HeadingScalar, 'Color', obj.HeadingColor);
-                message = sprintf('%0.0f\n(%0.0f, %0.0f)\n%0.0f°', i, position.Center.X, position.Center.Y, position.Heading);
-                text(obj.LocationAxes, (position.Center.X + obj.XLabelOffset), (position.Center.Y + obj.YLabelOffset), message, 'Color', obj.PositionTextColor)
+                % for each robot and its target in the positions map, plot and label
+                for i = 1:obj.Environment.NumRobots
+                    position = obj.Environment.Positions(num2str(i));
+                    target = obj.Environment.Targets(num2str(i));
+                    
+                    % plot and label position, heading, (x,y) coords:
+                    scatter(obj.LocationAxes, position.Center.X, position.Center.Y, obj.DotSize, obj.RobotColors(i,:));
+                    quiver(obj.LocationAxes, position.Center.X, position.Center.Y, (position.Nose.X - position.Center.X) * obj.HeadingScalar, (position.Nose.Y - position.Center.Y) * obj.HeadingScalar, 'Color', obj.RobotColors(i,:));
+%                     message = sprintf('%0.0f\n(%0.0f, %0.0f)\n%0.0f°', i, position.Center.X, position.Center.Y, position.Heading);
+%                     text(obj.LocationAxes, (position.Center.X + obj.XLabelOffset), (position.Center.Y + obj.YLabelOffset), message, 'Color', obj.RobotColors(i,:))
+                    
+                    % plot and label heading from center through nose point
+                    % text(obj.LocationAxes, (position.Center.X - obj.XLabelOffset), (position.Center.Y - obj.YLabelOffset), num2str(position.Heading), 'Color', obj.RobotColors(i,:))
+                    
+                    % plot and label target
+                    scatter(obj.LocationAxes, target.Center.X, target.Center.Y, obj.DotSize, obj.RobotColors(i,:), 'filled');
+                    % text(obj.LocationAxes, (target.Center.X + obj.XLabelOffset), (target.Center.Y + obj.YLabelOffset), num2str(i), 'Color', obj.RobotColors(i,:))
+                    
+                end
                 
-                % plot and label heading from center through nose point
-                %text(obj.LocationAxes, (position.Center.X - obj.XLabelOffset), (position.Center.Y - obj.YLabelOffset), num2str(position.Heading), 'Color', obj.HeadingTextColor)
-
-                % plot and label target
-                scatter(obj.LocationAxes, target.Center.X, target.Center.Y, obj.DotSize, obj.TargetColor);
-                text(obj.LocationAxes, (target.Center.X + obj.XLabelOffset), (target.Center.Y + obj.YLabelOffset), num2str(i), 'Color', obj.TargetTextColor)
+                % set axis scale, aspect ratio, and title
+                axis(obj.LocationAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
+                obj.LocationAxes.DataAspectRatio = [1,1,1];
+                title(obj.LocationAxes, 'Robot Locations');
                 
+            catch
             end
-            
-            % set axis scale, aspect ratio, and title
-            axis(obj.LocationAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
-            obj.LocationAxes.DataAspectRatio = [1,1,1];
-            title(obj.LocationAxes, 'Robot Locations');
-            
+                
         end
     end
 end
