@@ -29,8 +29,11 @@ classdef Vision < handle
             obj.Updated = false;
             obj.Transformation = transformation;
             obj.Bounds = bounds;
-            obj = obj.StartCamera();
-            obj = obj.PurgeCamera();
+            
+            if ~obj.Environment.IsSimulation
+                obj = obj.StartCamera();
+                obj = obj.PurgeCamera(); 
+            end
             
         end
         
@@ -93,43 +96,68 @@ classdef Vision < handle
             %UpdatePositions: Takes image, binarizes it, determines robot
             %   positions, and updates obj.Environment.Positions
             
-            % get and plot new BW image
-            obj = obj.GetBWImage();
-            
-            % get anchor points in the field as cell array
-            anchorPoints = obj.GetAnchorPoints();
-            
-            % if incorrect number of anchor points are found, try again:
-            % set Updated to false and return without updating current positions
-            if numel(anchorPoints) ~= (obj.Environment.NumRobots * obj.Environment.AnchorsPerRobot)
-                obj.Updated = false;
-                return;
-            end
-            
-            % get n-tuples grouping anchor points (where n=AnchorsPerRobot)
-            anchorGroups = obj.GetAnchorGroups(anchorPoints);
-            
-            % create cell array of position objects from anchor point triplets
-            positions = obj.GetPositions(anchorPoints, anchorGroups);
-            
-            % create map <ID, position> to update with      
-            if isempty(obj.Environment.Positions)
-                % first iteration
-                map = InitializePositions(obj, positions);
+            if obj.Environment.IsSimulation
+                % Update positions in simulation but do not actually call
+                % vision functions
+                
+                map = containers.Map;
+                
+                for i = 1:obj.Environment.NumRobots
+                    robot = obj.Environment.RobotSims{i, 1};
+                    map(num2str(i)) = robot.Position;
+                end
+                
+                % update Environment positions map and cache
+                if length(obj.Environment.Positions) == obj.Environment.NumRobots
+                    obj.Environment.OldPositions = obj.Environment.Positions;
+                end
+                obj.Environment.Positions = map;
+                obj.Updated = true;
+                
+                % update plotted environment positions
+                obj.Plotter.PlotPositions();
+                
             else
-                % all successive iterations
-                map = MatchPositions(obj, positions);
+                % get and plot new BW image
+                obj = obj.GetBWImage();
+                
+                % get anchor points in the field as cell array
+                anchorPoints = obj.GetAnchorPoints();
+                
+                % if incorrect number of anchor points are found, try again:
+                % set Updated to false and return without updating current positions
+                if numel(anchorPoints) ~= (obj.Environment.NumRobots * obj.Environment.AnchorsPerRobot)
+                    obj.Updated = false;
+                    return;
+                end
+                
+                % get n-tuples grouping anchor points (where n=AnchorsPerRobot)
+                anchorGroups = obj.GetAnchorGroups(anchorPoints);
+                
+                % create cell array of position objects from anchor point triplets
+                positions = obj.GetPositions(anchorPoints, anchorGroups);
+                
+                % create map <ID, position> to update with
+                if isempty(obj.Environment.Positions)
+                    % first iteration
+                    map = InitializePositions(obj, positions);
+                else
+                    % all successive iterations
+                    map = MatchPositions(obj, positions);
+                end
+                
+                % update Environment positions map and cache
+                if length(obj.Environment.Positions) == obj.Environment.NumRobots
+                    obj.Environment.OldPositions = obj.Environment.Positions;
+                end
+                obj.Environment.Positions = map;
+                obj.Updated = true;
+                
+                % update plotted environment positions
+                obj.Plotter.PlotPositions();
             end
             
-            % update Environment positions map and cache
-            if length(obj.Environment.Positions) == obj.Environment.NumRobots
-                obj.Environment.OldPositions = obj.Environment.Positions;
-            end
-            obj.Environment.Positions = map;
-            obj.Updated = true;
-
-            % update plotted environment positions
-            obj.Plotter.PlotPositions();
+            
         end
         
         function map = InitializePositions(obj, positions)

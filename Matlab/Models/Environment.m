@@ -14,6 +14,11 @@ classdef Environment < handle
         Delay                   % delay in sec to wait between commands
         GoHome                  % boolean indicating whether robots should return "home" at end of target map
         
+        % simulation configuration settings
+        IsSimulation            % boolean indicating whether we are running simulation or real experiment
+        RobotSims               % container of RobotSim objects
+        SimulationNoise         % parameter to control noisiness of observations under simulation
+        
         % dynamic properties
         Iteration;      % counter variable tracking number of commands sent
         Positions;      % map<str(idnumber), Position> of robots in field
@@ -23,7 +28,7 @@ classdef Environment < handle
     end
     
     methods
-        function obj = Environment(inputNumRobots, bounds)
+        function obj = Environment(inputNumRobots, bounds, isSimulation)
             %Environment:
             %   Construct an environment object
                                     
@@ -39,15 +44,23 @@ classdef Environment < handle
             obj.NumRobots = inputNumRobots;
             obj.XAxisSize = round(bounds(3));
             obj.YAxisSize = round(bounds(4));
+            obj.IsSimulation = isSimulation;
+            
+            % construct simulated robots if simulated
+            if obj.IsSimulation
+                for i = 1:obj.NumRobots
+                    obj.RobotSims{i,1} = RobotSim(i);
+                end
+            end
             
             % Manually populate other configuration settings below:
             obj.AnchorsPerRobot = 3;
             obj.Iteration = 1;      
             obj.UDPTransmission = true;
             obj.UDPReception = true;
-            obj.ConvergenceThreshold = 50;
+            obj.ConvergenceThreshold = 20;
             obj.FullSpeedThreshold = 300;
-            obj.Delay = 6;
+            obj.Delay = 1;
             obj.GoHome = true;
         end
                 

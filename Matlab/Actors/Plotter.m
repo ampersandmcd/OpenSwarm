@@ -48,7 +48,7 @@ classdef Plotter < handle
             obj.XLabelOffset = 50;
             obj.YLabelOffset = 50;
             obj.DotSize = 72;
-            obj.HeadingScalar = 5;
+            obj.HeadingScalar = 100;
             
             obj.PositionColor = 'blue';
             obj.PositionTextColor = 'blue';
@@ -69,31 +69,31 @@ classdef Plotter < handle
             subplot(3,2,1);
             title('Webcam');
             obj.ColorImageAxes = gca();
-            obj.ColorImageAxes.DataAspectRatio = [1,1,1];
+            %obj.ColorImageAxes.DataAspectRatio = [1,1,1];
             axis(obj.ColorImageAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
                        
             subplot(3,2,2);
             title('Robot Locations');
             obj.LocationAxes = gca();
-            obj.LocationAxes.DataAspectRatio = [1,1,1];
+            %obj.LocationAxes.DataAspectRatio = [1,1,1];
             axis(obj.LocationAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
             
             subplot(3,2,3);
             title('Posterior Mean');
             obj.MeanAxes = gca();
-            obj.MeanAxes.DataAspectRatio = [1,1,1];
+            %obj.MeanAxes.DataAspectRatio = [1,1,1];
             axis(obj.MeanAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
             
             subplot(3,2,4);
             title('Posterior Variance');
             obj.VarAxes = gca();
-            obj.VarAxes.DataAspectRatio = [1,1,1];
+            %obj.VarAxes.DataAspectRatio = [1,1,1];
             axis(obj.VarAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
             
             subplot(3,2,[5,6]);
             title('Loss Function');
             obj.LossAxes = gca();
-            obj.LossAxes.DataAspectRatio = [1,1,1];
+            %obj.LossAxes.DataAspectRatio = [1,1,1];
             
             figure;
             gcf();
@@ -127,7 +127,7 @@ classdef Plotter < handle
         
         function obj = PlotMean(obj, meshX, meshY, mean)
            %PlotLoss: display loss on LossAxes 
-           mesh(obj.MeanAxes, meshX, meshY, reshape(mean, size(meshX, 1), []));
+           mesh(obj.MeanAxes, meshX, meshY, reshape(mean, size(meshX, 1), []), 'FaceColor', 'interp');
            colormap('jet');
            view(obj.MeanAxes, 2);
            title(obj.MeanAxes, 'Posterior Mean');
@@ -135,7 +135,7 @@ classdef Plotter < handle
         
         function obj = PlotVar(obj, meshX, meshY, var)
            %PlotLoss: display loss on LossAxes 
-           mesh(obj.VarAxes, meshX, meshY, reshape(var, size(meshX, 1), []));
+           mesh(obj.VarAxes, meshX, meshY, reshape(var, size(meshX, 1), []), 'FaceColor', 'interp');
            colormap('jet');
            view(obj.VarAxes, 2);
            title(obj.VarAxes, 'Posterior Variance');
@@ -174,7 +174,7 @@ classdef Plotter < handle
                     
                     % plot and label position, heading, (x,y) coords:
                     scatter(obj.LocationAxes, position.Center.X, position.Center.Y, obj.DotSize, obj.RobotColors(i,:));
-                    quiver(obj.LocationAxes, position.Center.X, position.Center.Y, (position.Nose.X - position.Center.X) * obj.HeadingScalar, (position.Nose.Y - position.Center.Y) * obj.HeadingScalar, 'Color', obj.RobotColors(i,:));
+                    quiver(obj.LocationAxes, position.Center.X, position.Center.Y, cos(deg2rad(position.Heading)) * obj.HeadingScalar, sin(deg2rad(position.Heading)) * obj.HeadingScalar, 'Color', obj.RobotColors(i,:));
 %                     message = sprintf('%0.0f\n(%0.0f, %0.0f)\n%0.0f°', i, position.Center.X, position.Center.Y, position.Heading);
 %                     text(obj.LocationAxes, (position.Center.X + obj.XLabelOffset), (position.Center.Y + obj.YLabelOffset), message, 'Color', obj.RobotColors(i,:))
                     

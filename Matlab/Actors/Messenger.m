@@ -7,6 +7,7 @@ classdef Messenger < handle
         % object dependencies
         Environment;            % Environment object dependency
         Plotter;                % Plotter object dependency
+        Data;                   % HILGPC_Data object dependency
         
         % static configurations
         UDPTransmitterIP;       % IP over which to broadcast UDP commands
@@ -28,13 +29,14 @@ classdef Messenger < handle
     end
     
     methods
-        function obj = Messenger(inputEnvironment, inputPlotter)
+        function obj = Messenger(inputEnvironment, inputPlotter, inputData)
             %Messenger: 
             %   Construct and configure a messenger object
             
             % set dependencies
             obj.Environment = inputEnvironment;
             obj.Plotter = inputPlotter;
+            obj.Data = inputData;
             
             % set configurations
             obj.UDPTransmitterIP = '10.10.10.255';
@@ -47,11 +49,11 @@ classdef Messenger < handle
             obj.LastMessage = zeros(inputEnvironment.NumRobots, 1);
             obj.Received = false;
             
-            if obj.Environment.UDPTransmission
+            if obj.Environment.UDPTransmission && ~obj.Environment.IsSimulation
                 obj = obj.StartUDPTransmitter();
             end
             
-            if obj.Environment.UDPReception
+            if obj.Environment.UDPReception && ~obj.Environment.IsSimulation
                 obj = obj.StartUDPReceiver();
             end
         end
@@ -82,8 +84,28 @@ classdef Messenger < handle
             %SendDirections:
             %   Given directions map<str(ID), Burst>, calls
             %   BuildDirectionsMessage and sends result with SendMessage
-            message = obj.BuildDirectionsMessage(directions);
-            obj.SendMessage(message);
+            
+            if obj.Environment.IsSimulation
+                % send simulated directions to each robot 
+                for i = 1:obj.Environment.NumRobots
+                    % get burst for robot i from Directions map
+                    try
+                        burst = directions(num2str(i));
+                    catch
+                        burst.Angle = 0;
+                        burst.Speed = 0;
+                    end
+                    
+                    % send this burst to robot i in Environment.RobotSims
+                    robot = obj.Environment.RobotSims{i,1};
+                    robot = robot.Drive(burst);
+                    obj.Environment.RobotSims{i,1} = robot;
+                end
+            else
+                % send real directions over UDP
+                message = obj.BuildDirectionsMessage(directions);
+                obj.SendMessage(message);
+            end
         end
               
         function obj = SendMessage(obj, message)
@@ -99,29 +121,49 @@ classdef Messenger < handle
            %    from each robot.
            %    Set Received true if all messages in LastMessage were
            %    updated; else, set false.
+           %    If simulated, read from actual lightmap and add noise
            
-           % Assume we have received all messages; set false if not
-           obj.Received = true;
-           
-           % Iterate over all robots in field
-           for i = 1:obj.Environment.NumRobots
-
-               udpr = obj.UDPReceiver{i};
-               length = udpr.BytesAvailable;
-
-               if length > 0
-                   % Message reception successful
-                   message = fscanf(udpr);
-                   number = str2double(message);
-                   obj.LastMessage(i,1) = number;
-               else
-                    % Message reception unsuccessful
-                    obj.Received = false;
-                    warning("Robot %d did not send feedback", i);
+           if obj.Environment.IsSimulation
+               % Simulate message reception
+               
+               obj.Received = true;
+               
+               % Iterate over all robots in field
+               for i = 1:obj.Environment.NumRobots
+                   
+                   % Simulate reading by adding Gaussian noise to ground
+                   % truth
+                   robot = obj.Environment.RobotSims{i,1};
+                   x = robot.Position.Center.X;
+                   y = robot.Position.Center.Y;
+                   reading =  obj.Data.GroundTruth(x,y);
+                   obj.LastMessage(i,1) = reading;
+                   
                end
-
+               
+           else
+               % Assume we have received all messages; set false if not
+               obj.Received = true;
+               
+               % Iterate over all robots in field
+               for i = 1:obj.Environment.NumRobots
+                   
+                   udpr = obj.UDPReceiver{i};
+                   length = udpr.BytesAvailable;
+                   
+                   if length > 0
+                       % Message reception successful
+                       message = fscanf(udpr);
+                       number = str2double(message);
+                       obj.LastMessage(i,1) = number;
+                   else
+                       % Message reception unsuccessful
+                       obj.Received = false;
+                       warning("Robot %d did not send feedback", i);
+                   end
+                   
+               end
            end
-           
         end
         
         function message = BuildDirectionsMessage(obj, directions)

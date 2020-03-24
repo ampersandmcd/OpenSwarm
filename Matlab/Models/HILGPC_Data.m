@@ -483,7 +483,9 @@ classdef HILGPC_Data < handle
             % positions
             
             % Rescale from analog 0-1024 scale to 0-5 scale
-            samples = obj.RescaleSamples(samples);
+            if ~obj.Environment.IsSimulation
+                samples = obj.RescaleSamples(samples);
+            end
            
             % Iterate over robots, saving current coordinate and light level
             % into sample points and sample means
@@ -1269,6 +1271,15 @@ classdef HILGPC_Data < handle
             obj.Loss = cat(1, obj.Loss, loss);
 
            
+        end
+        
+        function val = GroundTruth(obj, x, y)
+            % Return ground truth value at the point closest to x,y
+           
+            to_match = [x,y];
+            match_idx = knnsearch(obj.GroundTruthPoints, to_match);
+            val = obj.GroundTruthMeans(match_idx, 1);
+            
         end
         
         function mat = TargetsToMatrix(obj)

@@ -22,6 +22,14 @@ classdef Position
             obj.Center = Point(inputX, inputY);
         end
         
+        function obj = SimPosition(inputX, inputY, inputHeading)
+            %SimPosition: Construct and return position object for use in
+            %    simulation, given only x, y of center and heading
+            
+            obj.Center = Point(inputX, inputY);
+            obj.Heading = inputHeading;
+        end
+        
     end
         
     methods                

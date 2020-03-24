@@ -10,7 +10,9 @@
 % initialize environment settings
 % note: obtain bounds using Utils/ImageConfiguration.m
 
-environment = Environment(4, bounds);
+isSimulation = true;
+bounds = [0, 0, 710, 290];
+environment = Environment(4, bounds, isSimulation);
 environment.Iteration = 1;
 
 % initialize plot helper object
@@ -21,10 +23,6 @@ vision = Vision(environment, plotter, transformation, bounds);
 
 % initialize navigation
 navigator = Navigator(environment, plotter);
-
-% initialize communications
-messenger = Messenger(environment, plotter);
-
 
 
 %% SETUP: HILGPC dependencies
@@ -54,6 +52,12 @@ hilgpc_data = HILGPC_Data(environment, plotter, hilgpc_settings, mfgp_matlab);
 
 % create HILGPC actors
 hilgpc_planner = HILGPC_Planner(environment, hilgpc_settings, hilgpc_data);
+
+
+%% SETUP: More OpenSwarm dependencies
+
+% initialize communications
+messenger = Messenger(environment, plotter, hilgpc_data);
 
 
 %% INPUT
@@ -123,7 +127,10 @@ while true
     
     explore
     
+    % set new targets and force plot
     environment.Targets = targets;
+    plotter.PlotPositions();
+    plotter.PlotVoronoi(voronoi);
     
 %     if ~explore
 %         % conduct one iteration of Lloyd's Algorithm to circumcenters
@@ -156,13 +163,13 @@ while true
             pause(environment.Delay);
             
             % read back feedback
-                messenger.ReadMessage();
+            messenger.ReadMessage();
             
             % save current figure
-            plotter.SaveFigure();
+            % plotter.SaveFigure();
             
             % save current data
-            hilgpc_data.SaveData();
+            % hilgpc_data.SaveData();
         end
         
         % update positions

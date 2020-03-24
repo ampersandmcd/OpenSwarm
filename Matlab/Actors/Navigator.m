@@ -101,11 +101,25 @@ classdef Navigator < handle
                     % determine necessary Burst speed
                     distance = position.Center.Distance(target.Center);
                     
-                    if distance < obj.Environment.ConvergenceThreshold
-                        speed = 0;
+                    if obj.Environment.IsSimulation
+                       % Simulation: smooth cutoff 
+                       if distance < obj.Environment.ConvergenceThreshold
+                           speed = 0;
+                       elseif distance < 2*obj.Environment.ConvergenceThreshold
+                           speed = (distance/2/obj.Environment.ConvergenceThreshold)^2 * 2*obj.Environment.ConvergenceThreshold;
+                       else
+                           speed = 100;
+                       end
                     else
-                        speed = 100;
+                        % Not a simulation: discrete cutoff
+                        if distance < obj.Environment.ConvergenceThreshold
+                            speed = 0;
+                        else
+                            speed = 100;
+                        end
                     end
+                    
+                    
                     
                     % construct and save Burst object in directions map
                     burst = Burst(speed, turnAngle);
