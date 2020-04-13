@@ -11,12 +11,25 @@ classdef RobotSim
     
     methods
         
-        function obj = RobotSim(id)
+        function obj = RobotSim(id, environment)
             %ROBOTSIM Construct an instance of a simulated robot
 
             obj.Id = id;
-            obj.Position = Position.SimPosition(100*id, 100, 90);
             obj.SpeedCoeff = 0.25;
+            
+            % randomly perturb startX to converge to different solutions
+            % startX is in [100*id-25, 100*id+25]
+            % step = (environment.XAxisSize - 2 * environment.EdgeGuard) / (2 * environment.NumRobots);
+            % startX = ((2 * id - 1) * step + environment.EdgeGuard);
+            % startY = environment.YAxisSize / 2;
+            % noise = (rand(1) * step - step / 2); % UNUSED FOR NOW
+            
+            % Start X,Y randomly in space to experiment with convergence
+            % conditions
+            startX = (environment.XAxisSize - 2 * environment.EdgeGuard) * rand(1) + environment.EdgeGuard;
+            startY = (environment.YAxisSize - 2 * environment.EdgeGuard) * rand(1) + environment.EdgeGuard;
+            
+            obj.Position = Position.SimPosition(startX, startY, 90);
         end
         
         function obj = Drive(obj, burst)

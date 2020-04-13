@@ -89,7 +89,7 @@ classdef HILGPC_Data < handle
             
             % generate test points with guard around perimeter to
             % aviod robot collisions
-            pad = hilgpc_settings.EdgeGuard;
+            pad = environment.EdgeGuard;
             [obj.TestMeshX, obj.TestMeshY] = meshgrid(...
                 pad:hilgpc_settings.GridResolution:environment.XAxisSize-pad, ...
                 pad:hilgpc_settings.GridResolution:environment.YAxisSize-pad);
@@ -943,29 +943,10 @@ classdef HILGPC_Data < handle
                 px, py, corners, tx, ty, f_samples);
             centroids = [new_px, new_py];
 
-%             % Visualize Voronoi partitions and centroids
-%             ax = obj.Plotter.AuxiliaryAxes;
-%             cla(ax);
-%             hold(ax, 'on');
-%             
-%             for i = 1:obj.Environment.NumRobots
-%                 color = obj.Plotter.RobotColors(i,:);
-%                 size = obj.Plotter.DotSize;
-%                 pgon = polygons{i,1};
-%                 plot(ax, polyshape(pgon(:,1), pgon(:,2)));
-%                 scatter(ax, centroids(i,1), centroids(i,2), size, color, 'filled');
-%             end
-%             
-%             
-%             % Rescale axes and set title
-%             title(ax, 'Exploit: Centroid Step');
-%             ax.DataAspectRatio = [1,1,1];
-                        
             % Step 6: Set CentroidsMatrix and Centroids fields with helper
             % method
             obj.CentroidsMatrix = centroids;
             obj.Centroids = obj.MatrixToPositions(centroids);      
-            obj.VoronoiCells = polygons;
             
         end
         
@@ -1092,38 +1073,19 @@ classdef HILGPC_Data < handle
             % uncertainty-maximizing point within each cell, and sets MaxS2
             % member variable accordingly. Utilizes voronoi partition in
             % the original space to determine set of MaxS2 points
-            
-            
-            % Configure visualization for debugging
-%             ax = obj.Plotter.AuxiliaryAxes;
-%             cla(ax);
-%             hold(ax, 'on');
-            
-            % Get current robot positions
-            positions = obj.PositionsToMatrix();          
-        
-            % Step 1: Compute voronoi partition of original space and
-            % initialize local variables
-            px = positions(:,1);  % initializer points
-            py = positions(:,2);
-            corners = [min(obj.TestPoints(:,1)), min(obj.TestPoints(:,2));  % corners of polygon to be voronoi'd
-                max(obj.TestPoints(:,1)), min(obj.TestPoints(:,2));
-                max(obj.TestPoints(:,1)), max(obj.TestPoints(:,2));
-                min(obj.TestPoints(:,1)), max(obj.TestPoints(:,2))];
-            
-            [vertices, cells] = Voronoi.VoronoiBounded(px, py, corners);
-            
-            % Step 2: Find uncertainty-maximizing points in each
+                   
+
+            % Find uncertainty-maximizing points in each
             % Voronoi partition and add to set to be sampled
+            %
+            % DO NOT repartition space on explore step!
             max_s2_points = zeros(obj.Environment.NumRobots, 2);
-            polygons = {};
+            polygons = obj.VoronoiCells;
             
             for i = 1:obj.Environment.NumRobots
                 
                 % Iterate through each Voronoi cell polygon
-                cell = cells{i};
-                polygon = vertices(cell, :); % subset the vertices of the polygon bounding just this cell
-                polygons{i,1} = polygon;
+                polygon = polygons{i, 1};
                 
                 % Get indices of test points in this Voronoi cell polygon
                 in_indices = inpolygon(obj.TestPoints(:,1), obj.TestPoints(:,2), polygon(:,1), polygon(:,2));
@@ -1140,22 +1102,12 @@ classdef HILGPC_Data < handle
                 % Store coordinates of this call's maxS2 point
                 max_s2_point = in_points(max_s2_index,:);
                 max_s2_points(i, :) = max_s2_point;
-              
-                % Visualize
-%                 color = obj.Plotter.RobotColors(i,:);
-%                 size = obj.Plotter.DotSize;
-%                 plot(ax, polyshape(polygon(:,1), polygon(:,2)), 'FaceColor', color);
-%                 scatter(ax, max_s2_point(:,1), max_s2_point(:,2), size, color, 'filled');
             end
             
-            % Rescale axes and set title
-%             title(ax, 'Explore: MaxS2 Step');
-%             ax.DataAspectRatio = [1,1,1];
-
             % Step 3: Set MaxS2Matrix and MaxS2 fields with helper
             obj.MaxS2Matrix = max_s2_points;
             obj.MaxS2 = obj.MatrixToPositions(max_s2_points);  
-            obj.VoronoiCells = polygons;
+            
         end
         
         function ComputeRandomSearch(obj)
@@ -1222,13 +1174,13 @@ classdef HILGPC_Data < handle
 
         end
         
-        function loss = ComputeLoss(obj)
+        function [loss, polygons] = ComputeLoss(obj)
            % Given a current state of robots, compute the loss WRT squared-distance from weight metric 
            
            % Get current robot positions
             positions = obj.PositionsToMatrix();          
         
-            % Step 1: Compute voronoi partition of original space and
+            % Step 1: Compute TEMPORARY voronoi partition of original space and
             % initialize local variables
             px = positions(:,1);  % initializer points
             py = positions(:,2);
@@ -1242,12 +1194,14 @@ classdef HILGPC_Data < handle
             % Step 2: Iterate over entire point set in each cell and
             % compute loss WRT f
             loss = 0;
+            polygons = {};
             
             for i = 1:obj.Environment.NumRobots
                                 
                 % Iterate through each Voronoi cell polygon
                 cell = cells{i};
                 polygon = vertices(cell, :); % subset the vertices of the polygon bounding just this cell
+                polygons{i, 1} = polygon;
                 
                 % Get indices of test points in this Voronoi cell polygon
                 in_indices = inpolygon(obj.GroundTruthPoints(:,1), obj.GroundTruthPoints(:,2), polygon(:,1), polygon(:,2));
@@ -1271,6 +1225,37 @@ classdef HILGPC_Data < handle
             obj.Loss = cat(1, obj.Loss, loss);
 
            
+        end
+        
+        function UpdateVoronoi(obj)
+            % Update Voronoi partition of object when called
+            
+            % Get current robot positions
+            positions = obj.PositionsToMatrix();          
+        
+            % Compute voronoi partition
+            px = positions(:,1);  % initializer points
+            py = positions(:,2);
+            corners = [min(obj.TestPoints(:,1)), min(obj.TestPoints(:,2));  % corners of polygon to be voronoi'd
+                max(obj.TestPoints(:,1)), min(obj.TestPoints(:,2));
+                max(obj.TestPoints(:,1)), max(obj.TestPoints(:,2));
+                min(obj.TestPoints(:,1)), max(obj.TestPoints(:,2))];
+            [vertices, cells] = Voronoi.VoronoiBounded(px, py, corners);
+            
+            % Store voronoi partition into useable form
+            polygons = {};
+            
+            for i = 1:obj.Environment.NumRobots
+                
+                % Iterate through each Voronoi cell polygon and store
+                cell = cells{i};
+                polygon = vertices(cell, :); % subset the vertices of the polygon bounding just this cell
+                polygons{i,1} = polygon;
+               
+            end
+
+            obj.VoronoiCells = polygons;
+            
         end
         
         function val = GroundTruth(obj, x, y)

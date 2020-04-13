@@ -87,6 +87,15 @@ classdef Navigator < handle
                     dx = target.Center.X - position.Center.X;
                     dy = target.Center.Y - position.Center.Y;
                     
+                    % add noise to prevent degenerate cases of angle
+                    % computation
+                    if dx == 0
+                        dx = 0.01;
+                    end
+                    if dy == 0
+                        dy = 0.01;
+                    end
+                    
                     targetAngle = Utils.ArctanInDegrees(dx, dy);
                     currentAngle = position.Heading;
                     turnAngle = targetAngle - currentAngle;
@@ -105,8 +114,9 @@ classdef Navigator < handle
                        % Simulation: smooth cutoff 
                        if distance < obj.Environment.ConvergenceThreshold
                            speed = 0;
-                       elseif distance < 2*obj.Environment.ConvergenceThreshold
-                           speed = (distance/2/obj.Environment.ConvergenceThreshold)^2 * 2*obj.Environment.ConvergenceThreshold;
+                           turnAngle = 0;
+                       elseif distance < obj.Environment.FullSpeedThreshold
+                           speed = (distance/obj.Environment.FullSpeedThreshold) * 100;
                        else
                            speed = 100;
                        end
@@ -114,6 +124,7 @@ classdef Navigator < handle
                         % Not a simulation: discrete cutoff
                         if distance < obj.Environment.ConvergenceThreshold
                             speed = 0;
+                            turnAngle = 0;
                         else
                             speed = 100;
                         end

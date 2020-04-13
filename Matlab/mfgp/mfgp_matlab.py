@@ -24,9 +24,22 @@ from scipy.spatial import distance_matrix
 import sys
 
 
-# np.random.seed(1234)
+np.random.seed(1234)
+
 
 def init_MFGP():
+    """
+    Note that all hyperparams are log-scaled, and
+        hyp[0] = mu_lo
+        hyp[1] = s^2_lo
+        hyp[2] = l_lo
+        hyp[3] = mu_hi
+        hyp[4] = s^2_hi
+        hyp[5] = l_hi
+        hyp[6] = rho
+        hyp[7] = noise l
+        hyp[8] = noise h
+    """
     X_L = np.empty([0, 2])
     y_L = np.empty([0, 1])
     X_H = np.empty([0, 2])
@@ -34,6 +47,7 @@ def init_MFGP():
     model = Multifidelity_GP(X_L, y_L, X_H, y_H)
     model.hyp = numpy.loadtxt('cov_hyp.txt')
     return model
+
 
 def update_MFGP_L(model, X_Lmem, y_Lmem):
     # Update interface with matlab
@@ -51,6 +65,7 @@ def update_MFGP_L(model, X_Lmem, y_Lmem):
     model.updt_info(X_L, y_L, X_H, y_H)
     return model
 
+
 def update_MFGP_H(model, X_Hmem, y_Hmem):
     # Update interface with matlab
     # Convert to numpy from memoryview objects passed by matlab
@@ -67,6 +82,7 @@ def update_MFGP_H(model, X_Hmem, y_Hmem):
     model.updt_info(X_L, y_L, X_H, y_H)
     return model
 
+
 def predict_MFGP(model, X_star):
     # Prediction interface with matlab
 
@@ -78,25 +94,6 @@ def predict_MFGP(model, X_star):
 
     return [u, var]
 
-# def tsp_solve(X):
-#     if X.shape[0] < 4:
-#         return X
-#     else:
-#         lat = pd.Series(X[:, 0])
-#         lon = pd.Series(X[:, 1])
-#         solver = TSPSolver.from_data(lat, lon, norm="EUC_2D")
-#         sort_data = solver.solve()
-#         assert sort_data.success
-#         tour = X[sort_data.tour, :]
-#         # plot_tsp(X)
-#         return tour
-
-
-def plot_tsp(X):
-
-    plt.plot(X[:, 0], X[:, 1], 'ro-')
-    plt.show()
-
 
 def test_func(arg):
     array = np.asarray(arg)
@@ -104,97 +101,23 @@ def test_func(arg):
 
 
 if __name__ == "__main__":
-    # number of hi fidelity samples
-    N_H = 50
-    # number of low fidelity samples
-    N_L = 50
-    # dimension of input (2)
-    D = 2
 
-    lb = np.array([-3, -3])
-    ub = np.array([3, 3])
-    # rectangular field over which GP is defined
-    Bound = (lb, ub)
-    model = train_MFGP(N_H, N_L, Bound)
+    # train hyperparameters from CSV file
+    # store LoFi points in lofi.csv
+    # store HiFi points in hifi.csv
+    # return new hyperparameters and save in cov_hyp.txt if valid
 
-    hyp = model.hyp
-    hyp = np.exp(hyp)
-    rho = hyp[-3]
-    sigma_n_L = hyp[-2] * rho ** 2
-    sigma_n_H = hyp[-1]
-    theta_L = hyp[model.idx_theta_L]
-    theta_H = hyp[model.idx_theta_H]
-    len_L = theta_L[2]
-    len_H = theta_H[2]
-    var_L = theta_L[1] * rho ** 2
-    var_H = theta_H[1]
-    mean_L = theta_L[0]
-    mean_H = rho * mean_L + theta_H[0]
+    lofi = numpy.loadtxt('lofi.csv', skiprows=1, delimiter=',')
+    hifi = numpy.loadtxt('hifi.csv', skiprows=1, delimiter=',')
 
-    # sw_pt_L = ((len_H / len_L) ** 2 * sigma_n_L / sigma_n_H + 1) * var_H
+    X_L = lofi[:, 0:2].reshape(-1, 2)      # columns 1 and 2 are (x,y) points
+    y_L = lofi[:, 2].reshape(-1, 1)        # column 3 is f(x,y)
+    X_H = hifi[:, 0:2].reshape(-1, 2)
+    y_H = hifi[:, 2].reshape(-1, 1)
 
-    sw_pt_L = 1.2 * var_H
+    model = Multifidelity_GP(X_L, y_L, X_H, y_H)
+    model.train()
+    print(model.hyp);
 
-    model.X_L = np.empty([0, 2])
-    model.y_L = np.empty([0, 1])
-    model.X_H = np.empty([0, 2])
-    model.y_H = np.empty([0, 1])
-
-    var = var_L + var_H
-
-    dlt = 0.05
-    thrd = 39
-    j = 0
-
-    ter_max = 1.1 * var_H
-
-    max_var = float("inf")
-    max_var_list = np.zeros(5)
-    s = 0
-
-    while max_var >= ter_max:
-        X_L_new = np.empty([0, 2])
-        X_H_new = np.empty([0, 2])
-        y_L_new = np.empty([0, 1])
-        y_H_new = np.empty([0, 1])
-        model.updt_info(X_L_new, y_L_new, X_H_new, y_H_new)
-        c = np.sqrt(2 * np.log(2 ** j / dlt))
-        my_plot_search.plot_mdl(model, Bound, 50, thrd, c)
-        while max_var >= max(0.75 ** 2 * var, ter_max):
-            x, max_var = model.get_max_var(Bound, thrd, c, X_L_new, X_H_new)
-            # x, max_var = model.get_max_var(Bound, 39, 3, X_L_new, X_H_new)
-            if max_var <= sw_pt_L:
-                X_H_new = np.vstack((X_H_new, x))
-            else:
-                X_L_new = np.vstack((X_L_new, x))
-            print("Round: %d, LF point no.:%d, HF point.no.: %d" %
-                  (j + 1, X_L_new.shape[0], X_H_new.shape[0]))
-            print("Maximum variance: %f" % (max_var))
-            max_var_list[:-1] = max_var_list[1:]
-            max_var_list[-1] = max_var
-            my_plot_search.plot_var(max_var_list, s)
-            s = s + 1
-        var = max_var
-        my_plot_search.plot_line(X_L_new, X_H_new)
-
-        # fig = plot_mdl(model, Bound, 50, thrd, c, X_L_new, X_H_new)
-        plt.pause(1.)
-        # X_L_new = tsp_solve(X_L_new)
-        y_L_new = f_L(X_L_new)
-        # X_H_new = tsp_solve(X_H_new)
-        y_H_new = f_H(X_H_new)
-
-        # fig.axes[3].lines[0] = []
-        # fig.canvas.draw()
-        # plt.pause(0.5)
-        # fig.axes[3].plot(X_L_new[:, 0], X_L_new[:, 1], 2, 'ro-')
-        # fig.canvas.draw()
-        # plt.pause(0.5)
-
-        model.updt_info(X_L_new, y_L_new, X_H_new, y_H_new)
-        print("Round: %d is finished" % (j + 1))
-        j = j + 1
-
-    X_L_new = np.empty([0, 2])
-    X_H_new = np.empty([0, 2])
-    # plot_mdl(model, Bound, 50, thrd, c, X_L_new, X_H_new)
+    fname = input("Filename to save hyperparameters to: ")
+    np.savetxt(fname, model.hyp, delimiter='\n')

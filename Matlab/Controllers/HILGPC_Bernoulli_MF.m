@@ -9,11 +9,14 @@
 
 % initialize environment settings
 % note: obtain bounds using Utils/ImageConfiguration.m
-
 isSimulation = true;
 bounds = [0, 0, 710, 290];
-environment = Environment(4, bounds, isSimulation);
+maxIteration = 100;
+environment = Environment(8, bounds, isSimulation, maxIteration);
 environment.Iteration = 1;
+
+% set random seed for start position reproducibility
+rng(300);
 
 % initialize plot helper object
 plotter = Plotter(environment);
@@ -36,16 +39,15 @@ mfgp_base = py.importlib.import_module('gaussian_process');
 py.importlib.reload(mfgp_matlab);
 py.importlib.reload(mfgp_base);
 
-% set random seed for Gaussian reproducibility
-rng(100);
-
 % configure HILGPC settings
 s2_threshold = 0; % parameter does not apply in this algorithm - only in Threshold algorithm
 recycle_lofi_prior = false;
 recycle_hifi_prior = false;
-lofi_prior_filename = "../Data/prior6_confidence0.8.csv";
-hifi_prior_filename = "../Data/collect_hifi.csv";
-hilgpc_settings = HILGPC_Settings(s2_threshold, recycle_lofi_prior, lofi_prior_filename, recycle_hifi_prior, hifi_prior_filename);
+lofi_prior_filename = "../Data/four_corners_human.csv";
+hifi_prior_filename = "../Data/VOID.csv";
+ground_truth_filename = "../Data/four_corners_50.csv";
+hilgpc_settings = HILGPC_Settings(s2_threshold, recycle_lofi_prior, lofi_prior_filename, recycle_hifi_prior,...
+    hifi_prior_filename, ground_truth_filename);
 
 % create HILGPC data object
 hilgpc_data = HILGPC_Data(environment, plotter, hilgpc_settings, mfgp_matlab);
@@ -63,7 +65,7 @@ messenger = Messenger(environment, plotter, hilgpc_data);
 %% INPUT
 % 
 % if ~recycle_lofi_prior
-%     % if not recycling human prior, get lofi input and save it
+%     if not recycling human prior, get lofi input and save it
 %     hilgpc_data.GetLofiPrior();
 %     hilgpc_data.SavePrior(lofi_prior_filename, "low");
 % end
@@ -86,8 +88,11 @@ prob_explore = 1;
 
 %% ITERATE
 
+% Initialize voronoi partitions
+vision.UpdatePositions();
+hilgpc_data.UpdateVoronoi();
 
-while true
+while environment.Iteration <= environment.MaxIteration
     
     % update current positions of robots in field
     vision.UpdatePositions();
@@ -106,48 +111,28 @@ while true
     voronoi = hilgpc_data.VoronoiCells;
     plotter.PlotVoronoi(voronoi);
     
-    % set targets for this iteration
+    % Set targets for this iteration
     targets = containers.Map;
-    explore = eye(environment.NumRobots, 1);
     
-    for i = 1:environment.NumRobots
-        % FOR EACH ROBOT, draw from a Bernoulli to decide explore
-        % or exploit
-         explore(i,1) = binornd(1, prob_explore);
-        
-        if explore(i,1)
-            % Set target for ith robot to max-S2 point
-            targets(num2str(i)) = hilgpc_data.MaxS2(num2str(i));
-        else
-            % Set target for ith robot to centroid point
-            targets(num2str(i)) = hilgpc_data.Centroids(num2str(i));
-        end
+    % Draw from a Bernoulli to decide explore
+    % or exploit for ALL ROBOTS
+    explore = binornd(1, prob_explore);
     
+    if explore
+        % Set target for ith robot to max-S2 point
+        targets = hilgpc_data.MaxS2;
+    else
+        % Set target for ith robot to centroid point
+        targets = hilgpc_data.Centroids;
     end
-    
-    explore
+        
+    % debug
+    fprintf("Explore?: %f\n", explore);
     
     % set new targets and force plot
     environment.Targets = targets;
     plotter.PlotPositions();
     plotter.PlotVoronoi(voronoi);
-    
-%     if ~explore
-%         % conduct one iteration of Lloyd's Algorithm to circumcenters
-%         % (exploit)
-%         hilgpc_data.ComputeCentroidsNumerically();
-%         targets = hilgpc_data.Centroids;
-%         environment.Targets = targets;
-%         
-%     else
-%         % conduct max-uncertainty sample within Voronoi partitions
-%         % (explore)
-%         hilgpc_data.ComputeCellMaxS2Numerically();
-%         %hilgpc_data.ComputeRandomSearch();
-%         targets = hilgpc_data.MaxS2;
-%         environment.Targets = targets;
-%         
-%     end
     
     % targets are now properly set    
     % until robots are converged on this round of targets, get and send directions
@@ -166,7 +151,7 @@ while true
             messenger.ReadMessage();
             
             % save current figure
-            % plotter.SaveFigure();
+            plotter.SavePng();
             
             % save current data
             % hilgpc_data.SaveData();
@@ -176,14 +161,13 @@ while true
         vision.UpdatePositions();
         plotter.PlotVoronoi(voronoi);
        
-               
-        disp("Vaild Frame");
+        % disp("Vaild Frame");
 
     end
     
     % robots are now converged on this round's targets
     % if this is an exploration step, sample and update the GP
-    if sum(explore) > 0
+    if explore > 0
         
         % Repeat until robots all send back a valid sample
         while ~messenger.Received
@@ -205,11 +189,6 @@ while true
         % Get positions for easy manipulation
         targets = hilgpc_data.TargetsToMatrix();
         
-        % Keep only the entries of positions and samples for robots that
-        % were on an explore step to train the model
-        samples = samples(explore == 1)
-        targets = targets(explore == 1, :)
-            
         % Update model with new samples
         hilgpc_data.UpdateModel(targets, samples);
         
@@ -218,23 +197,38 @@ while true
         hilgpc_data.VisualizeGP();
     end
     
-    % update the probability of explore / exploit linearly
-    new_u = hilgpc_data.GetMaxUncertainty()
+    % Update the probability of explore / exploit linearly
+    new_u = hilgpc_data.GetMaxUncertainty();
+    fprintf('New Max Uncertainty: %f\n', new_u);
 
-    % be sure our probability is not > 1
-    prob_explore = min(2 * new_u / max_u, 1)
-    
-    % scale linearly out of maximum observed uncertainty
-%     if new_u > max_u
-%         max_u = new_u;
-%     end
+    % Be sure our probability is not > 1
+    prob_explore = min(new_u / max_u, 1);
+    fprintf('Prob Explore: %f\n', prob_explore);
 
-    % compute and visualize loss
-    hilgpc_data.ComputeLoss();
+    % Compute and visualize loss
+    [loss, loss_voronoi] = hilgpc_data.ComputeLoss();
     plotter.PlotLoss(hilgpc_data.Loss);
+    fprintf('Loss: %d\n', hilgpc_data.Loss(end, 1));
+    
+    % Visualize loss voronoi
+    plotter.PlotLossVoronoiOverTruth(loss_voronoi, hilgpc_data.TestMeshX,...
+        hilgpc_data.TestMeshY, hilgpc_data.GroundTruthMeans);
+    
+    
+    % save current figure
+    plotter.SavePng();
+    
+    % Update Voronoi partition if this was NOT an explore step
+    if ~explore
+       hilgpc_data.UpdateVoronoi();
+       fprintf('Repartitioned');
+    end
 
     % update environment iteration tracker
     environment.Iterate();
+    
+    % display iteration
+    fprintf('\n\n\n\nIteration: %d\n\n', environment.Iteration);
     
 end
 

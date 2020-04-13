@@ -12,7 +12,7 @@ classdef Plotter < handle
         MeanAxes;
         VarAxes;
         LossAxes;
-        AuxiliaryAxes;      % auxiliary axes
+        CumulativeLossAxes;
         
         XLabelOffset;       % x-offset distance for labels on plots
         YLabelOffset;       % y-offset distance for labels on plots
@@ -67,22 +67,22 @@ classdef Plotter < handle
             % configure axes in which to plot: set title, aspect ratio and
             % axis limits
             subplot(3,2,1);
-            title('Webcam');
+            title('Ground Truth & Loss Voronoi');
             obj.ColorImageAxes = gca();
             %obj.ColorImageAxes.DataAspectRatio = [1,1,1];
-            axis(obj.ColorImageAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
+            %axis(obj.ColorImageAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
                        
             subplot(3,2,2);
-            title('Robot Locations');
+            title('Robot Locations & Lloyd Voronoi');
             obj.LocationAxes = gca();
             %obj.LocationAxes.DataAspectRatio = [1,1,1];
-            axis(obj.LocationAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
+            %axis(obj.LocationAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
             
             subplot(3,2,3);
             title('Posterior Mean');
             obj.MeanAxes = gca();
             %obj.MeanAxes.DataAspectRatio = [1,1,1];
-            axis(obj.MeanAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
+            %axis(obj.MeanAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
             
             subplot(3,2,4);
             title('Posterior Variance');
@@ -91,13 +91,15 @@ classdef Plotter < handle
             axis(obj.VarAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
             
             subplot(3,2,[5,6]);
-            title('Loss Function');
+            title('Loss by Iteration');
             obj.LossAxes = gca();
-            %obj.LossAxes.DataAspectRatio = [1,1,1];
             
-            figure;
-            gcf();
-            obj.BWImageAxes = gca();
+            % display BW image if not simulated
+            if ~obj.Environment.IsSimulation
+                figure;
+                gcf();
+                obj.BWImageAxes = gca();
+            end
             
         end
         
@@ -118,16 +120,30 @@ classdef Plotter < handle
         end
         
         function obj = PlotLoss(obj, loss)
-           %PlotLoss: display loss on LossAxes 
+           %PlotLoss: display loss on LossAxes and cumulative loss on
+           %CumulativeLossAxes
+           
+           cla(obj.LossAxes);
+           
+           yyaxis left;
            plot(obj.LossAxes, loss);
-           title(obj.LossAxes, 'Loss by Iteration');
+           r = refline(obj.LossAxes, 0, min(loss));
+           r.Color = [0.5, 0.5, 0.5];
+           r.LineStyle = ':';
+           title(obj.LossAxes, 'Loss & Cumulative Loss by Iteration');
            xlabel(obj.LossAxes, 'Iteration');
            ylabel(obj.LossAxes, 'Loss');
+           
+           
+           yyaxis right;
+           plot(obj.LossAxes, cumsum(loss));
+           ylabel(obj.LossAxes, 'Cumulative Loss');
         end
         
         function obj = PlotMean(obj, meshX, meshY, mean)
            %PlotLoss: display loss on LossAxes 
-           mesh(obj.MeanAxes, meshX, meshY, reshape(mean, size(meshX, 1), []), 'FaceColor', 'interp');
+           mesh(obj.MeanAxes, meshX, meshY, reshape(mean, size(meshX, 1), []),...
+               'FaceColor', 'interp', 'EdgeAlpha', 0);
            colormap('jet');
            view(obj.MeanAxes, 2);
            title(obj.MeanAxes, 'Posterior Mean');
@@ -135,7 +151,8 @@ classdef Plotter < handle
         
         function obj = PlotVar(obj, meshX, meshY, var)
            %PlotLoss: display loss on LossAxes 
-           mesh(obj.VarAxes, meshX, meshY, reshape(var, size(meshX, 1), []), 'FaceColor', 'interp');
+           mesh(obj.VarAxes, meshX, meshY, reshape(var, size(meshX, 1), []),...
+               'FaceColor', 'interp', 'EdgeAlpha', 0);
            colormap('jet');
            view(obj.VarAxes, 2);
            title(obj.VarAxes, 'Posterior Variance');
@@ -146,13 +163,50 @@ classdef Plotter < handle
             for i = 1:obj.Environment.NumRobots
                polygon = polygons{i,1};
                color = obj.RobotColors(i,:);
-               plot(obj.LocationAxes, polyshape(polygon(:,1), polygon(:,2)), 'FaceColor', color);
+               plot(obj.LocationAxes, polyshape(polygon(:,1), polygon(:,2)),...
+                   'FaceColor', color, 'EdgeColor', color);
             end
             
         end
         
+        function obj = PlotLossVoronoiOverTruth(obj, polygons, meshX, meshY, truth)
+            % Plot loss voronoi atop ground truth function
+            
+            % Clean axes
+            hold(obj.ColorImageAxes, 'off');
+            cla(obj.ColorImageAxes);
+            hold(obj.ColorImageAxes, 'on');
+            
+            % Plot ground truth BELOW voronoi
+            z = truth - max(truth);
+            z = reshape(z, size(meshX, 1), []);
+            mesh(obj.ColorImageAxes, meshX, meshY, z,...
+                'FaceColor', 'interp', 'FaceAlpha', 1, 'EdgeAlpha', 0);
+            colormap('jet');
+            view(obj.ColorImageAxes, 2);
+            title(obj.ColorImageAxes, 'Ground Truth & Loss Voronoi');
+            
+            % Plot loss voronoi and current positions
+            for i = 1:obj.Environment.NumRobots
+                polygon = polygons{i,1};
+                color = obj.RobotColors(i,:);
+                plot(obj.ColorImageAxes, polyshape(polygon(:,1), polygon(:,2)),...
+                    'EdgeColor', 'white', 'EdgeAlpha', 1,...
+                    'FaceAlpha', 0.5, 'FaceColor', color, 'LineWidth', 1);
+                
+                position = obj.Environment.Positions(num2str(i));                
+                scatter(obj.ColorImageAxes, position.Center.X, position.Center.Y,...
+                    obj.DotSize, color, 'filled', 'MarkerEdgeColor', 'white');
+            end          
+        end
+        
         function SaveFigure(obj)
             savefig(obj.Figure, sprintf('figures/human-figure-%d.fig', obj.Idx));
+            obj.Idx = obj.Idx + 1;
+        end
+        
+        function SavePng(obj)
+            saveas(obj.Figure, sprintf('figures/figure-%d.png', obj.Idx));
             obj.Idx = obj.Idx + 1;
         end
         

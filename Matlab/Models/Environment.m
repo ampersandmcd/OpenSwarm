@@ -7,12 +7,14 @@ classdef Environment < handle
         AnchorsPerRobot;        % number of visual anchors for tracking per robot
         XAxisSize;              % width of field in pixels (determined by overhead webcam)
         YAxisSize;              % height of field in pixels (determined by overhead webcam)
+        EdgeGuard;              % padding around edges of field
         UDPTransmission;        % boolean indicating whether UDP transmissions will be sent
         UDPReception;           % boolean indicating whether UDP messages will be listened for
         ConvergenceThreshold;   % distance (px) to check against when determining if a robot has converged upon its target point
         FullSpeedThreshold      % distance (px) to check against when determining if robot should burst at full speed or reduced speed
         Delay                   % delay in sec to wait between commands
         GoHome                  % boolean indicating whether robots should return "home" at end of target map
+        MaxIteration            % maximum number of iterations to run
         
         % simulation configuration settings
         IsSimulation            % boolean indicating whether we are running simulation or real experiment
@@ -24,11 +26,10 @@ classdef Environment < handle
         Positions;      % map<str(idnumber), Position> of robots in field
         OldPositions;   % cached
         Targets;        % map<str(idnumber), Position> of targets for robots in field
-        %TODO: add logging properties to environment
     end
     
     methods
-        function obj = Environment(inputNumRobots, bounds, isSimulation)
+        function obj = Environment(inputNumRobots, bounds, isSimulation, maxIteration)
             %Environment:
             %   Construct an environment object
                                     
@@ -45,23 +46,25 @@ classdef Environment < handle
             obj.XAxisSize = round(bounds(3));
             obj.YAxisSize = round(bounds(4));
             obj.IsSimulation = isSimulation;
-            
-            % construct simulated robots if simulated
-            if obj.IsSimulation
-                for i = 1:obj.NumRobots
-                    obj.RobotSims{i,1} = RobotSim(i);
-                end
-            end
+            obj.MaxIteration = maxIteration;
             
             % Manually populate other configuration settings below:
             obj.AnchorsPerRobot = 3;
             obj.Iteration = 1;      
             obj.UDPTransmission = true;
             obj.UDPReception = true;
-            obj.ConvergenceThreshold = 20;
-            obj.FullSpeedThreshold = 300;
-            obj.Delay = 1;
+            obj.ConvergenceThreshold = 5;
+            obj.FullSpeedThreshold = 25;
+            obj.Delay = 0;
             obj.GoHome = true;
+            obj.EdgeGuard = 50;
+            
+            % construct simulated robots if simulated
+            if obj.IsSimulation
+                for i = 1:obj.NumRobots
+                    obj.RobotSims{i,1} = RobotSim(i, obj);
+                end
+            end
         end
                 
         function obj = Iterate(obj)

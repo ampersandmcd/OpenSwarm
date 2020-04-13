@@ -17,3 +17,9 @@ figures_3/
 figures_4/
 figures_5/
 figures/
+
+.idea/
+__pycache__/
+
+four_corners_4.6/
+four_corners_4.12/
