@@ -11,12 +11,10 @@
 % note: obtain bounds using Utils/ImageConfiguration.m
 isSimulation = true;
 bounds = [0, 0, 710, 290];
+transformation = [];
 maxIteration = 100;
-environment = Environment(8, bounds, isSimulation, maxIteration);
+environment = Environment(4, bounds, isSimulation, maxIteration);
 environment.Iteration = 1;
-
-% set random seed for start position reproducibility
-rng(300);
 
 % initialize plot helper object
 plotter = Plotter(environment);
@@ -82,15 +80,22 @@ hilgpc_data.VisualizeGP();
 % initialize explore-exploit random variable where high max uncertainty
 % yields low probability of exploitation and low max uncertainty yields
 % high probability of exploitation
-max_u = hilgpc_data.GetMaxUncertainty();
-% k = 1; % tuning parameter greater than 0
-prob_explore = 1;
+%
+% note that this will be overwritten by the starting max variance
+max_var_0 = hilgpc_data.GetMaxUncertainty() * ones(environment.NumRobots, 1);
+
+% Initialize other variables to be used on each iteration
+targets = containers.Map;
+explore = zeros(environment.NumRobots, 1);
+prob_explore = zeros(environment.NumRobots, 1);
+max_var_point_t = zeros(environment.NumRobots, 2);
+max_var_index_t = zeros(environment.NumRobots, 1);
+max_var_t = zeros(environment.NumRobots, 1);
 
 %% ITERATE
 
 % Initialize voronoi partitions
 vision.UpdatePositions();
-hilgpc_data.UpdateVoronoi();
 
 while environment.Iteration <= environment.MaxIteration
     
@@ -111,28 +116,52 @@ while environment.Iteration <= environment.MaxIteration
     voronoi = hilgpc_data.VoronoiCells;
     plotter.PlotVoronoi(voronoi);
     
-    % Set targets for this iteration
-    targets = containers.Map;
-    
-    % Draw from a Bernoulli to decide explore
-    % or exploit for ALL ROBOTS
-    explore = binornd(1, prob_explore);
-    
-    if explore
-        % Set target for ith robot to max-S2 point
-        targets = hilgpc_data.MaxS2;
-    else
-        % Set target for ith robot to centroid point
-        targets = hilgpc_data.Centroids;
+    % Draw from a Bernoulli to decide explore or exploit for robots on
+    % a one-by-one, distributed basis
+    for i = 1:environment.NumRobots
+        
+        % Consider max variance in this cell
+        % x,y point of max variance
+        max_var_point_t(i, :) = hilgpc_data.MaxS2Matrix(i,:);
+        x = max_var_point_t(i, :);
+        % index of point of max variance
+        max_var_index_t(i, 1) = find(hilgpc_data.TestPoints(:, 1)==x(1) & hilgpc_data.TestPoints(:, 2)==x(2));
+        % actual max variance value
+        max_var_t(i, 1) = hilgpc_data.TestS2(max_var_index_t(i, 1));
+        
+        % Initialize max_var_0 vector if necessary
+        if environment.Iteration == 1
+           max_var_0(i, 1) = max_var_t(i, 1); 
+        end
+        
+        % Compute prob_explore and explore for the i-th cell
+        prob_explore(i, 1) = min(max_var_t(i, 1) / max_var_0(i, 1), 1);
+        explore(i, 1) = binornd(1, prob_explore(i, 1));
+        
+        % Decide target point based on explore variable
+        if explore(i, 1)
+           targets(num2str(i)) = hilgpc_data.MaxS2(num2str(i)); 
+        else
+           targets(num2str(i)) = hilgpc_data.Centroids(num2str(i));
+        end
+        
     end
         
     % debug
-    fprintf("Explore?: %f\n", explore);
+    disp("Current Max Var by Cell");
+    disp(max_var_t');
+    disp("Initial Max Var by Cell");
+    disp(max_var_0');
+    disp("Prob Explore by Cell");
+    disp(prob_explore');
+    disp("Explore?");
+    disp(explore');
     
-    % set new targets and force plot
+    % set new targets and force plot of positions, voronoi and explore prob
     environment.Targets = targets;
     plotter.PlotPositions();
     plotter.PlotVoronoi(voronoi);
+    plotter.PlotExplore(prob_explore, explore);
     
     % targets are now properly set    
     % until robots are converged on this round of targets, get and send directions
@@ -151,7 +180,7 @@ while environment.Iteration <= environment.MaxIteration
             messenger.ReadMessage();
             
             % save current figure
-            plotter.SavePng();
+            % plotter.SavePng();
             
             % save current data
             % hilgpc_data.SaveData();
@@ -166,8 +195,8 @@ while environment.Iteration <= environment.MaxIteration
     end
     
     % robots are now converged on this round's targets
-    % if this is an exploration step, sample and update the GP
-    if explore > 0
+    % if this is an exploration step by ANY robot, sample and update the GP
+    if sum(explore) > 0
         
         % Repeat until robots all send back a valid sample
         while ~messenger.Received
@@ -187,23 +216,17 @@ while environment.Iteration <= environment.MaxIteration
         samples = messenger.LastMessage;
         
         % Get positions for easy manipulation
-        targets = hilgpc_data.TargetsToMatrix();
+        targetMatrix = hilgpc_data.TargetsToMatrix();
         
-        % Update model with new samples
-        hilgpc_data.UpdateModel(targets, samples);
+        % ONLY update model with information from robots on an explore step
+        update_samples = samples(explore==1);
+        update_targets = targetMatrix(explore==1, :);
+        hilgpc_data.UpdateModel(update_targets, update_samples);
         
         % Recompute and revisualize model
         hilgpc_data.ComputeMFGP(mfgp_matlab);
         hilgpc_data.VisualizeGP();
     end
-    
-    % Update the probability of explore / exploit linearly
-    new_u = hilgpc_data.GetMaxUncertainty();
-    fprintf('New Max Uncertainty: %f\n', new_u);
-
-    % Be sure our probability is not > 1
-    prob_explore = min(new_u / max_u, 1);
-    fprintf('Prob Explore: %f\n', prob_explore);
 
     % Compute and visualize loss
     [loss, loss_voronoi] = hilgpc_data.ComputeLoss();
@@ -216,13 +239,7 @@ while environment.Iteration <= environment.MaxIteration
     
     
     % save current figure
-    plotter.SavePng();
-    
-    % Update Voronoi partition if this was NOT an explore step
-    if ~explore
-       hilgpc_data.UpdateVoronoi();
-       fprintf('Repartitioned');
-    end
+    % plotter.SavePng();
 
     % update environment iteration tracker
     environment.Iterate();

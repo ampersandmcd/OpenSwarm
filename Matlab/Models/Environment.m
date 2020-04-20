@@ -60,6 +60,8 @@ classdef Environment < handle
             obj.EdgeGuard = 50;
             
             % construct simulated robots if simulated
+            % set random seed for start position reproducibility
+            rng(100);
             if obj.IsSimulation
                 for i = 1:obj.NumRobots
                     obj.RobotSims{i,1} = RobotSim(i, obj);

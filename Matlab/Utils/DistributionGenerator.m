@@ -30,6 +30,15 @@ classdef DistributionGenerator
                 
             end
             
+            % Compute numerical integral of function and divide by it such
+            % that integral is 1 over region
+            mean_z = mean(z);
+            dx = max(hilgpc_data.TestPoints(:,1)) - min(hilgpc_data.TestPoints(:,1));
+            dy = max(hilgpc_data.TestPoints(:,2)) - min(hilgpc_data.TestPoints(:,2));
+            area = dx * dy;
+            integral = area * mean_z
+            
+            
         end
         
         function Visualize(hilgpc_data, z)
@@ -91,7 +100,7 @@ classdef DistributionGenerator
             title('Hifi - No Noise');
             colorbar;
                         
-            save
+            % save
             file = fopen(filename, 'w');
             fprintf(file, "X,Y,Means\n");
             fclose(file);

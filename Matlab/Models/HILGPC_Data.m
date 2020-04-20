@@ -120,6 +120,9 @@ classdef HILGPC_Data < handle
             
             % initialize python model
             obj.Model = mfgp_matlab.init_MFGP();
+            hyp = exp(double(obj.Model.hyp));
+            disp("Model Hyperparameters");
+            disp(hyp);
             
             obj.LoadGroundTruth();
             
@@ -401,7 +404,6 @@ classdef HILGPC_Data < handle
            result = mfgp_matlab.predict_MFGP(obj.Model, X_star);
            mu = double(result{1})';
            var = double(result{2})';
-           hyp = exp(double(obj.Model.hyp))
            
            obj.TestMeans = mu;
            obj.TestS2 = var;
@@ -694,10 +696,13 @@ classdef HILGPC_Data < handle
             % Called as a helper function in ComputeCartogram and
             % ComputeCellMaxS2.
             
-            f_minimum = min(obj.TestMeans);
-            f_maximum = max(obj.TestMeans);
-            obj.NormalizedTestMeans = (obj.TestMeans - f_minimum) ./ (f_maximum - f_minimum);
-            
+            if obj.Environment.Iteration == 1
+                obj.NormalizedTestMeans = ones(size(obj.TestMeans));
+            else
+                f_minimum = min(obj.TestMeans);
+                f_maximum = max(obj.TestMeans);
+                obj.NormalizedTestMeans = (obj.TestMeans - f_minimum) ./ (f_maximum);
+            end
         end
         
         function cartogram = ComputeCartogram(obj)
@@ -921,8 +926,14 @@ classdef HILGPC_Data < handle
             % integration to compute centroids of a voronoi partition in
             % the original space.
             
-            % get current robot positions
-            positions = obj.PositionsToMatrix();
+            % On first iteration, get current robot positions.
+            % On subsequent iterations, get LAST robot centroid
+            if obj.Environment.Iteration == 1
+                positions = obj.PositionsToMatrix();
+            else
+                positions = obj.CentroidsMatrix;
+            end
+            
             
             % Step 1: Normalize mean function prior to computing centroids
             obj.NormalizeMeans();
@@ -947,7 +958,7 @@ classdef HILGPC_Data < handle
             % method
             obj.CentroidsMatrix = centroids;
             obj.Centroids = obj.MatrixToPositions(centroids);      
-            
+            obj.VoronoiCells = polygons;
         end
         
         function ComputeCellMaxS2Cartogram(obj)
@@ -1227,8 +1238,9 @@ classdef HILGPC_Data < handle
            
         end
         
-        function UpdateVoronoi(obj)
-            % Update Voronoi partition of object when called
+        function UpdateVoronoiOnPositions(obj)
+            % Update Voronoi partition of object when called based on
+            % current positions
             
             % Get current robot positions
             positions = obj.PositionsToMatrix();          

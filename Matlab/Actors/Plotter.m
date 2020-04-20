@@ -9,10 +9,10 @@ classdef Plotter < handle
         LocationAxes;       % axes on which to plot robot locations
         ColorImageAxes;     % axes on which to show current color image
         BWImageAxes;        % axes on which to show current bw image
-        MeanAxes;
-        VarAxes;
-        LossAxes;
-        CumulativeLossAxes;
+        MeanAxes;           % axes on which to show current mean estimate
+        VarAxes;            % axes on which to show current variance estimate
+        LossAxes;           % axes on which to plot current loss
+        ExploreAxes;        % axes on which to plot explore decision
         
         XLabelOffset;       % x-offset distance for labels on plots
         YLabelOffset;       % y-offset distance for labels on plots
@@ -90,9 +90,13 @@ classdef Plotter < handle
             %obj.VarAxes.DataAspectRatio = [1,1,1];
             axis(obj.VarAxes, [0, obj.Environment.XAxisSize, 0, obj.Environment.YAxisSize]);
             
-            subplot(3,2,[5,6]);
+            subplot(3,2,5);
             title('Loss by Iteration');
             obj.LossAxes = gca();
+            
+            subplot(3,2,6);
+            title('Explore/Exploit by Robot');
+            obj.ExploreAxes = gca();
             
             % display BW image if not simulated
             if ~obj.Environment.IsSimulation
@@ -124,20 +128,14 @@ classdef Plotter < handle
            %CumulativeLossAxes
            
            cla(obj.LossAxes);
-           
-           yyaxis left;
            plot(obj.LossAxes, loss);
            r = refline(obj.LossAxes, 0, min(loss));
            r.Color = [0.5, 0.5, 0.5];
            r.LineStyle = ':';
-           title(obj.LossAxes, 'Loss & Cumulative Loss by Iteration');
+           title(obj.LossAxes, 'Loss by Iteration');
            xlabel(obj.LossAxes, 'Iteration');
            ylabel(obj.LossAxes, 'Loss');
-           
-           
-           yyaxis right;
-           plot(obj.LossAxes, cumsum(loss));
-           ylabel(obj.LossAxes, 'Cumulative Loss');
+          
         end
         
         function obj = PlotMean(obj, meshX, meshY, mean)
@@ -159,13 +157,31 @@ classdef Plotter < handle
         end
         
         function obj = PlotVoronoi(obj, polygons)
-            
+            %PlotVoronoi: display voronoi partition on location axes
             for i = 1:obj.Environment.NumRobots
                polygon = polygons{i,1};
                color = obj.RobotColors(i,:);
                plot(obj.LocationAxes, polyshape(polygon(:,1), polygon(:,2)),...
                    'FaceColor', color, 'EdgeColor', color);
             end
+            
+        end
+        
+        function obj = PlotExplore(obj, prob_explore, explore)
+            %PlotExplore: display prob_explore and explore T/F variables on
+            % explore axes
+            
+            cla(obj.ExploreAxes);
+            
+            % Plot bar graph of prob_explore
+            b = bar(obj.ExploreAxes, prob_explore);
+            
+            % Color bar according to robot
+            b.FaceColor = 'flat';
+            b.CData = obj.RobotColors;
+            ylim(obj.ExploreAxes, [0 1]);
+            title(obj.ExploreAxes, "Probability of Exploration");
+            
             
         end
         
