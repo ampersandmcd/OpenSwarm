@@ -21,5 +21,18 @@ figures/
 .idea/
 __pycache__/
 
-four_corners_4.6/
-four_corners_4.12/
+four_corners_50_n4_human_run1/
+four_corners_50_n4_human_run2/
+four_corners_50_n4_human_run3/
+
+four_corners_50_n8_human_run1/
+four_corners_50_n8_human_run2/
+four_corners_50_n8_human_run3/
+
+four_corners_50_n4_run1/
+four_corners_50_n4_run2/
+four_corners_50_n4_run3/
+
+four_corners_50_n8_run1/
+four_corners_50_n8_run2/
+four_corners_50_n8_run3/

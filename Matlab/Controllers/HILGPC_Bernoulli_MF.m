@@ -39,11 +39,11 @@ py.importlib.reload(mfgp_base);
 
 % configure HILGPC settings
 s2_threshold = 0; % parameter does not apply in this algorithm - only in Threshold algorithm
-recycle_lofi_prior = false;
+recycle_lofi_prior = true;
 recycle_hifi_prior = false;
-lofi_prior_filename = "../Data/four_corners_human.csv";
+lofi_prior_filename = "../Data/zigzag_human.csv";
 hifi_prior_filename = "../Data/VOID.csv";
-ground_truth_filename = "../Data/four_corners_50.csv";
+ground_truth_filename = "../Data/zigzag_50.csv";
 hilgpc_settings = HILGPC_Settings(s2_threshold, recycle_lofi_prior, lofi_prior_filename, recycle_hifi_prior,...
     hifi_prior_filename, ground_truth_filename);
 
@@ -63,7 +63,7 @@ messenger = Messenger(environment, plotter, hilgpc_data);
 %% INPUT
 % 
 % if ~recycle_lofi_prior
-%     if not recycling human prior, get lofi input and save it
+%     % if not recycling human prior, get lofi input and save it
 %     hilgpc_data.GetLofiPrior();
 %     hilgpc_data.SavePrior(lofi_prior_filename, "low");
 % end

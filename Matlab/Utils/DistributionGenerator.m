@@ -13,7 +13,7 @@ classdef DistributionGenerator
             
             x = hilgpc_data.TestPoints;
             
-            centers = [100,100; 100,200; 600,100; 600,200];
+            centers = [100,100; 300,200; 400,100; 600,200];
             len = 50;
             s2 = 5;
             z = zeros(size(x,1), 1);
