@@ -2,20 +2,49 @@ classdef DistributionGenerator
     %DISTRIBUTIONGENERATOR Used to generate distributions for testing
     
     properties
-        Prop
     end
     
-    methods(Static)
-        function z = squared_exponential_four_corners(hilgpc_data)
+    methods
+        
+        function obj = DistributionGenerator
+            
+        end
+        
+        function may_8_generator(obj, hilgpc_data)
+            
+            % Configure possible distributions
+            zig_zag = [100,100; 300,200; 400,100; 600,200];
+            corners = [100,100; 100,200; 600,100; 600,200];
+            rng(300);
+            num = 10;
+            random = zeros(num,2);
+            for i = 1:num
+                random(i, 1) = rand * hilgpc_data.Environment.XAxisSize;
+                random(i, 2) = rand * hilgpc_data.Environment.YAxisSize;
+            end
+            
+            % Pick distribution and construct ground-truth
+            centers = random
+            len = 50;
+            s2 = 1;
+            z = obj.SquaredExponential(hilgpc_data, centers, len, s2);
+                      
+            % Construct lofi
+            proportion = 0.2;
+            len = 100;
+            lofi = obj.ConstructLofi(hilgpc_data, z, proportion, len);
+        end
+        
+        function z = SquaredExponential(obj, hilgpc_data, centers, len, s2)
             % Generate a squared exponential four-corner function over x
             %
             % hilgpc_data : HILGPC_Data object with meshgrid points
             
             x = hilgpc_data.TestPoints;
             
-            centers = [100,100; 300,200; 400,100; 600,200];
-            len = 50;
-            s2 = 5;
+            % centers = [100,100; 300,200; 400,100; 600,200];
+            % len = 50;
+            % s2 = 5;
             z = zeros(size(x,1), 1);
             
             for i = 1:size(centers,1)
@@ -30,18 +59,24 @@ classdef DistributionGenerator
                 
             end
             
-            % Compute numerical integral of function and divide by it such
-            % that integral is 1 over region
+            z = obj.Normalize(z);
+            
+            % Compute numerical integral of function
             mean_z = mean(z);
             dx = max(hilgpc_data.TestPoints(:,1)) - min(hilgpc_data.TestPoints(:,1));
             dy = max(hilgpc_data.TestPoints(:,2)) - min(hilgpc_data.TestPoints(:,2));
             area = dx * dy;
-            integral = area * mean_z
             
+            
+            integral_ground_truth = area * mean_z;
+            disp('Ground Truth Integral:');
+            disp(integral_ground_truth);
+            
+            obj.Visualize(hilgpc_data, z);
             
         end
         
-        function Visualize(hilgpc_data, z)
+        function Visualize(obj, hilgpc_data, z)
             % Visualize generated function with heatmap
             %
             % hilgpc_data : HILGPC_Data object with meshgrid points
@@ -50,14 +85,14 @@ classdef DistributionGenerator
             figure;
             meshX = hilgpc_data.TestMeshX;
             meshY = hilgpc_data.TestMeshY;
-            mesh(meshX, meshY, reshape(z, size(meshX, 1), []), 'FaceColor', 'interp');
+            mesh(meshX, meshY, reshape(z, size(meshX, 1), []), 'FaceColor', 'interp', 'EdgeColor', 'None');
             colormap('jet');
             view(2);
             daspect([1,1,1]);
             
         end
         
-        function SaveGroundTruth(filename, hilgpc_data, z)
+        function SaveGroundTruth(obj, filename, hilgpc_data, z)
             % Save ground truth function for use in computing loss function
             %
             % filename : where to save ground truth to
@@ -81,7 +116,7 @@ classdef DistributionGenerator
             
         end
         
-        function SaveHifi(filename, hilgpc_data, z, proportion)
+        function OldSaveHifi(obj, filename, hilgpc_data, z, proportion)
             % Save high fidelity grid for use in training hyperparams
             %
             % filename : where to save hifi to
@@ -109,7 +144,7 @@ classdef DistributionGenerator
             
         end
         
-        function SaveLofi(filename, hilgpc_data, z, proportion, sn)
+        function OldSaveLofi(obj, filename, hilgpc_data, z, proportion, sn)
             % Save low fidelity grid for use in training hyperparams
             %
             % Take a random subset of high fidelity training points, add
@@ -148,6 +183,85 @@ classdef DistributionGenerator
             
             dlmwrite(filename, lofi, '-append');
             
+        end
+        
+        function lofi = ConstructLofi(obj, hilgpc_data, z, proportion, len)
+            % Construct low fidelity model given ground truth
+            %
+            % (1) Take downsized sample of ground truth points according to
+            % specified proportion
+            % (2) Predict rest of ground truth points using specified
+            % lengthscale (should be longer than hifi)
+            % (3) Return grid of lofi-predicted points
+            %
+            % hilgpc_data : HILGPC_Data object with meshgrid points
+            % z : ground truth points used to generate lofi representation
+            % proportion : proportion of ground truth points used to
+            %    construct kernel base points along one-dimension - note
+            %    that this will yield only proportion^2 points
+            % len : lengthscale to be used in lofi prediction base points
+            
+            rng(100);
+            
+            distribution = cat(2, hilgpc_data.TestPoints, z);
+            
+            % take proportion * n gridded samples for kernel set
+            flag = round(1 / proportion);
+            kernel_idx = [];
+
+            for row = 1:flag:size(hilgpc_data.TestMeshX, 1)
+                for col = 1:flag:size(hilgpc_data.TestMeshX, 2)
+                    x = hilgpc_data.TestMeshX(row, col);
+                    y = hilgpc_data.TestMeshY(row, col);
+                    point_idx = find(x==distribution(:,1) & y==distribution(:,2));
+                    kernel_idx(size(kernel_idx,1) + 1, 1) = point_idx;
+                end
+            end
+            
+            kernel_points = distribution(kernel_idx, :);
+            
+            % scatter kernel points
+            figure;
+            scatter(kernel_points(:,1), kernel_points(:,2), 20, kernel_points(:,3));
+            hold on;
+            
+            
+            lofi = zeros(size(distribution,1), 1);
+            
+            for i = 1:size(kernel_points,1)
+                
+                % add squared kerned based at each center point
+                center = kernel_points(i,1:2);
+                var = kernel_points(i,3);
+                
+                deltaX2 = (distribution(:,1) - center(:,1)).^2 + (distribution(:,2) - center(:,2)).^2;
+                power = -deltaX2 ./ (2 * len * len);
+                term = var .* exp(power);
+                lofi = lofi + term;
+                
+            end
+            
+            lofi = obj.Normalize(lofi);
+            
+            % Compute numerical integral of function
+            mean_z = mean(lofi);
+            dx = max(hilgpc_data.TestPoints(:,1)) - min(hilgpc_data.TestPoints(:,1));
+            dy = max(hilgpc_data.TestPoints(:,2)) - min(hilgpc_data.TestPoints(:,2));
+            area = dx * dy;
+            
+            
+            integral_lofi = area * mean_z;
+            disp('Lofi Integral:');
+            disp(integral_lofi);
+                      
+            obj.Visualize(hilgpc_data, lofi);
+
+            
+        end
+        
+        function z = Normalize(obj, z)
+            z = z - min(z);
+            z = z ./ max(z);
         end
     end
 end

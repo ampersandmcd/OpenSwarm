@@ -141,7 +141,7 @@ classdef Plotter < handle
         function obj = PlotMean(obj, meshX, meshY, mean)
            %PlotLoss: display loss on LossAxes 
            mesh(obj.MeanAxes, meshX, meshY, reshape(mean, size(meshX, 1), []),...
-               'FaceColor', 'interp', 'EdgeAlpha', 0);
+               'FaceColor', 'interp', 'EdgeColor', 'None');
            colormap('jet');
            view(obj.MeanAxes, 2);
            title(obj.MeanAxes, 'Posterior Mean');
@@ -150,7 +150,7 @@ classdef Plotter < handle
         function obj = PlotVar(obj, meshX, meshY, var)
            %PlotLoss: display loss on LossAxes 
            mesh(obj.VarAxes, meshX, meshY, reshape(var, size(meshX, 1), []),...
-               'FaceColor', 'interp', 'EdgeAlpha', 0);
+               'FaceColor', 'interp', 'EdgeColor', 'None');
            colormap('jet');
            view(obj.VarAxes, 2);
            title(obj.VarAxes, 'Posterior Variance');
@@ -197,7 +197,7 @@ classdef Plotter < handle
             z = truth - max(truth);
             z = reshape(z, size(meshX, 1), []);
             mesh(obj.ColorImageAxes, meshX, meshY, z,...
-                'FaceColor', 'interp', 'FaceAlpha', 1, 'EdgeAlpha', 0);
+                'FaceColor', 'interp', 'FaceAlpha', 1, 'EdgeColor', 'None');
             colormap('jet');
             view(obj.ColorImageAxes, 2);
             title(obj.ColorImageAxes, 'Ground Truth & Loss Voronoi');
