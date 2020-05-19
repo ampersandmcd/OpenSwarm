@@ -29,7 +29,7 @@ classdef HILGPC_Settings
     end
     
     methods
-        function obj = HILGPC_Settings(threshold, recycle_lofi, lofi_filename, recycle_hifi,... 
+        function obj = HILGPC_Settings(threshold, grid_res, recycle_lofi, lofi_filename, recycle_hifi,... 
                 hifi_filename, ground_truth_filename)
             %HILGPC_SETTINGS
             %   Instantiate settings object
@@ -41,7 +41,7 @@ classdef HILGPC_Settings
             
             % manually configure the following properties in this class
             % (they will not change often)
-            obj.GridResolution = 10;
+            obj.GridResolution = grid_res;
             obj.DistanceThreshold = 50;
             obj.MaxEvals = 10;
             obj.MaxClicks = 5;

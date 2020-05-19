@@ -145,6 +145,7 @@ classdef Plotter < handle
            colormap('jet');
            view(obj.MeanAxes, 2);
            title(obj.MeanAxes, 'Posterior Mean');
+           daspect(obj.MeanAxes, [1,1,1]);
         end
         
         function obj = PlotVar(obj, meshX, meshY, var)
@@ -154,6 +155,7 @@ classdef Plotter < handle
            colormap('jet');
            view(obj.VarAxes, 2);
            title(obj.VarAxes, 'Posterior Variance');
+           daspect(obj.VarAxes, [1,1,1]);
         end
         
         function obj = PlotVoronoi(obj, polygons)
@@ -164,7 +166,7 @@ classdef Plotter < handle
                plot(obj.LocationAxes, polyshape(polygon(:,1), polygon(:,2)),...
                    'FaceColor', color, 'EdgeColor', color);
             end
-            
+            daspect(obj.LocationAxes, [1,1,1]);
         end
         
         function obj = PlotExplore(obj, prob_explore, explore)
@@ -213,7 +215,10 @@ classdef Plotter < handle
                 position = obj.Environment.Positions(num2str(i));                
                 scatter(obj.ColorImageAxes, position.Center.X, position.Center.Y,...
                     obj.DotSize, color, 'filled', 'MarkerEdgeColor', 'white');
-            end          
+            end   
+            
+            daspect(obj.ColorImageAxes, [1,1,1]);
+
         end
         
         function SaveFigure(obj)

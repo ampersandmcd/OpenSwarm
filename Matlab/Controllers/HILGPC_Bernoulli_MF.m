@@ -10,10 +10,12 @@
 % initialize environment settings
 % note: obtain bounds using Utils/ImageConfiguration.m
 isSimulation = true;
-bounds = [0, 0, 710, 290];
+bounds = [0, 0, 1, 1];
+nRobots = 4;
+pad = 0.02;
 transformation = [];
 maxIteration = 100;
-environment = Environment(4, bounds, isSimulation, maxIteration);
+environment = Environment(nRobots, bounds, pad, isSimulation, maxIteration);
 environment.Iteration = 1;
 
 % initialize plot helper object
@@ -39,19 +41,21 @@ py.importlib.reload(mfgp_base);
 
 % configure HILGPC settings
 s2_threshold = 0; % parameter does not apply in this algorithm - only in Threshold algorithm
+grid_res = 0.02;
 recycle_lofi_prior = true;
 recycle_hifi_prior = false;
-lofi_prior_filename = "../Data/zigzag_human.csv";
+lofi_prior_filename = "../Data/human_wrong.csv";
 hifi_prior_filename = "../Data/VOID.csv";
-ground_truth_filename = "../Data/zigzag_50.csv";
-hilgpc_settings = HILGPC_Settings(s2_threshold, recycle_lofi_prior, lofi_prior_filename, recycle_hifi_prior,...
+ground_truth_filename = "../Data/truth.csv";
+hilgpc_settings = HILGPC_Settings(s2_threshold, grid_res, recycle_lofi_prior, lofi_prior_filename, recycle_hifi_prior,...
     hifi_prior_filename, ground_truth_filename);
 
 % create HILGPC data object
-hilgpc_data = HILGPC_Data(environment, plotter, hilgpc_settings, mfgp_matlab);
+mf = true; % multi-fidelity? true. single-fidelity? false.
+hilgpc_data = HILGPC_Data(environment, plotter, hilgpc_settings, mfgp_matlab, mf);
 
 % create HILGPC actors
-hilgpc_planner = HILGPC_Planner(environment, hilgpc_settings, hilgpc_data);
+% hilgpc_planner = HILGPC_Planner(environment, hilgpc_settings, hilgpc_data);
 
 
 %% SETUP: More OpenSwarm dependencies
@@ -77,12 +81,8 @@ messenger = Messenger(environment, plotter, hilgpc_data);
 hilgpc_data.ComputeMFGP(mfgp_matlab);
 hilgpc_data.VisualizeGP();
 
-% initialize explore-exploit random variable where high max uncertainty
-% yields low probability of exploitation and low max uncertainty yields
-% high probability of exploitation
-%
-% note that this will be overwritten by the starting max variance
-max_var_0 = hilgpc_data.GetMaxUncertainty() * ones(environment.NumRobots, 1);
+% compute starting max variance
+max_var_0 = hilgpc_data.MaxS2ValuesNoPrior;
 
 % Initialize other variables to be used on each iteration
 targets = containers.Map;
@@ -90,8 +90,7 @@ explore = zeros(environment.NumRobots, 1);
 prob_explore = zeros(environment.NumRobots, 1);
 max_var_point_t = zeros(environment.NumRobots, 2);
 max_var_index_t = zeros(environment.NumRobots, 1);
-max_var_t = zeros(environment.NumRobots, 1);
-
+max_var_t = hilgpc_data.MaxS2ValuesNoPrior * ones(environment.NumRobots, 1);
 %% ITERATE
 
 % Initialize voronoi partitions
@@ -129,13 +128,10 @@ while environment.Iteration <= environment.MaxIteration
         % actual max variance value
         max_var_t(i, 1) = hilgpc_data.TestS2(max_var_index_t(i, 1));
         
-        % Initialize max_var_0 vector if necessary
-        if environment.Iteration == 1
-           max_var_0(i, 1) = max_var_t(i, 1); 
-        end
         
         % Compute prob_explore and explore for the i-th cell
-        prob_explore(i, 1) = min(max_var_t(i, 1) / max_var_0(i, 1), 1);
+        % prob_explore(i, 1) = sqrt(min(max_var_t(i, 1) / max_var_0, 1));
+        prob_explore(i, 1) = power(min(max_var_t(i, 1) / max_var_0, 1), 2);
         explore(i, 1) = binornd(1, prob_explore(i, 1));
         
         % Decide target point based on explore variable
@@ -231,7 +227,7 @@ while environment.Iteration <= environment.MaxIteration
     % Compute and visualize loss
     [loss, loss_voronoi] = hilgpc_data.ComputeLoss();
     plotter.PlotLoss(hilgpc_data.Loss);
-    fprintf('Loss: %d\n', hilgpc_data.Loss(end, 1));
+    fprintf('Loss: %.8d\n', hilgpc_data.Loss(end, 1));
     
     % Visualize loss voronoi
     plotter.PlotLossVoronoiOverTruth(loss_voronoi, hilgpc_data.TestMeshX,...

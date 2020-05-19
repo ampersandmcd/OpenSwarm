@@ -11,6 +11,8 @@ classdef HILGPC_Data < handle
         Settings        % HILGPC_Settings dependency
         Plotter         % Plotting dependency
         
+        MF % Is this GP MF (true) or SF (false)?
+        
         % Human-input data (low-fidelity)
         InputPoints     % n rows by 2 col of human-input (x,y) points
         InputMeans      % n rows by 1 col of human-input means
@@ -65,6 +67,9 @@ classdef HILGPC_Data < handle
         MaxS2            % map<str(id), Position> of max uncertainty positions in weighted voronoi cells
         MaxS2Matrix      % simple nRobots x 2 matrix of x,y positions of max uncertainty points
         
+        % Most recent max-uncertainty values
+        MaxS2ValuesNoPrior     % nRobots x 1 vector of max variances before conditioning on prior
+        
         % Most recent random point in a region to sample
         RandomSample     % map<str(id), Position>
         RandomSampleMatrix
@@ -78,7 +83,7 @@ classdef HILGPC_Data < handle
     end
     
     methods
-        function obj = HILGPC_Data(environment, plotter, hilgpc_settings, mfgp_matlab)
+        function obj = HILGPC_Data(environment, plotter, hilgpc_settings, mfgp_matlab, mf)
             % HILGPC_DATA
             %    Set environment dependency and generate test points
             
@@ -86,6 +91,9 @@ classdef HILGPC_Data < handle
             obj.Environment = environment;
             obj.Plotter = plotter;
             obj.Settings = hilgpc_settings;
+            
+            % set sf/mf
+            obj.MF = mf;
             
             % generate test points with guard around perimeter to
             % aviod robot collisions
@@ -95,7 +103,7 @@ classdef HILGPC_Data < handle
                 pad:hilgpc_settings.GridResolution:environment.YAxisSize-pad);
             obj.TestPoints = reshape([obj.TestMeshX, obj.TestMeshY], [], 2);
 
-            % configure GP hyperparameters
+            % configure SFGP hyperparameters
             ell = 100;
             sf = 1;
             hyp.cov = log([ell; sf]);
@@ -103,21 +111,11 @@ classdef HILGPC_Data < handle
             sn = 1;
             hyp.lik = log(sn);            
             obj.Hyp = hyp;
-            
-            % if reusing user input, load data
-            if obj.Settings.RecycleLofiPrior
-                obj.RecycleLofiPrior();
-            end
-            
-            if obj.Settings.RecycleHifiPrior
-                obj.RecycleHifiPrior();
-            end
-            
+                                  
             % initialize number of samples to zero
             obj.NumSamples = 0;
             obj.NumHifi = 0;
-           
-            
+                       
             % initialize python model
             obj.Model = mfgp_matlab.init_MFGP();
             hyp = exp(double(obj.Model.hyp));
@@ -127,6 +125,19 @@ classdef HILGPC_Data < handle
             obj.LoadGroundTruth();
             
             obj.Idx = 0;
+            
+            % initialize max uncertainty before loading priors
+            obj.ComputeMFGP(mfgp_matlab);
+            obj.MaxS2ValuesNoPrior = obj.GetMaxUncertainty();
+            
+            % if reusing user input, load data
+            if obj.Settings.RecycleLofiPrior
+                obj.RecycleLofiPrior();
+            end
+            
+            if obj.Settings.RecycleHifiPrior
+                obj.RecycleHifiPrior();
+            end
             
         end
         
@@ -419,7 +430,7 @@ classdef HILGPC_Data < handle
             
             % return maximum uncertainty point in entire field
             u = max(obj.TestS2);
-            
+                                    
         end
         
         function obj = VisualizeGP(obj)
@@ -495,22 +506,32 @@ classdef HILGPC_Data < handle
                 
                 % Increment counter
                 obj.NumSamples = obj.NumSamples + 1;
-                obj.NumHifi = obj.NumHifi + 1;
                 n_s = obj.NumSamples;
-                n_h = obj.NumHifi;
                 
                 % Keep this robot id in SampleIds
                 obj.SampleIds(n_s, 1) = i;
                 
-                % Keep this sample (x,y) in SamplePoints and add to Hifi
+                % Keep this sample (x,y,f) in SamplePoints and add to proper
                 % training set
                 obj.SamplePoints(n_s, 1:2) = positions(i, 1:2);
-                obj.HifiTrainPoints(n_h, 1:2) = positions(i, 1:2);
-                
-                % Keep this sample mean level in SampleMeans and add to
-                % Hifi training set
                 obj.SampleMeans(n_s, 1) = samples(i, 1);
-                obj.HifiTrainMeans(n_h, 1) = samples(i, 1);
+
+                % add to proper training set
+                if obj.MF
+                    % add to hifi training set
+                    obj.NumHifi = obj.NumHifi + 1;
+                    n_h = obj.NumHifi;
+                    obj.HifiTrainPoints(n_h, 1:2) = positions(i, 1:2);
+                    obj.HifiTrainMeans(n_h, 1) = samples(i, 1);
+                else
+                    % add to lofi training set
+                    obj.NumLofi = obj.NumLofi + 1;
+                    n_l = obj.NumLofi;
+                    obj.LofiTrainPoints(n_l, 1:2) = positions(i, 1:2);
+                    obj.LofiTrainMeans(n_l, 1) = samples(i, 1);
+                end
+                % Keep this sample mean level in SampleMeans and add to
+                % proper training set
                 
                 % Report to user
                 fprintf("Robot %d : %f at position (%f, %f)\n",...
@@ -569,43 +590,10 @@ classdef HILGPC_Data < handle
             % Given lofi prior, reconstruct from CSV
             
             prior = readtable(obj.Settings.LofiFilename);
-            
-            % save first two columns of (x,y) points without header row
-            tempPoints = prior{1:end, 1:2};
-            
-            % save third column of means without header row
-            tempMeans = prior{1:end, 3};
-            
-            % save user confidence in fourth column without header row
-            obj.InputConfidence = prior{1, 4};
-            
-            % build test set
-            % add 2 points to the training set each offset by one stddev
-            % to properly train model mean and variance given imperfect
-            % human input
-            
-            % compute uncertainty
-            uncertainty = 1 - obj.InputConfidence;
-            
-            % iterate through input means and shift up and down to
-            % upper/lower uncertainty bounds to create train means
-            for i = 1:size(tempMeans, 1)
-                
-                % compute upper and lower bounds
-                mean = tempMeans(i, 1);
-                shift = uncertainty * mean;
-                upper = mean + shift;
-                lower = mean - shift;
-                
-                % create lower bound train point on odd indices
-                obj.LofiTrainPoints(2*i-1, 1:2) = tempPoints(i, 1:2);
-                obj.LofiTrainMeans(2*i-1, 1) = lower;
-                
-                % create upper bound train point on even indices
-                obj.LofiTrainPoints(2*i, 1:2) = tempPoints(i, 1:2);
-                obj.LofiTrainMeans(2*i, 1) = upper;
-                
-            end
+
+            % Take means at face value
+            obj.LofiTrainPoints = prior{1:end, 1:2};
+            obj.LofiTrainMeans = prior{1:end, 3};
             
             % Set size member
             obj.NumLofi = size(obj.LofiTrainMeans,1);
@@ -616,46 +604,14 @@ classdef HILGPC_Data < handle
             % Given hifi sample prior, reconstruct from CSV
             
             prior = readtable(obj.Settings.HifiFilename);
-            
-            % save first two columns of (x,y) points without header row
-            tempPoints = prior{1:end, 1:2};
-            
-            % save third column of means without header row
-            tempMeans = prior{1:end, 3};
-            
-            % save user confidence in fourth column without header row
-            obj.SampleConfidence = prior{1, 4};
-            
-            % build test set
-            % add 2 points to the training set each offset by one stddev
-            % to properly train model mean and variance given imperfect
-            % human input
-            
-            % compute uncertainty
-            uncertainty = 1 - obj.SampleConfidence;
-            
-            % iterate through input means and shift up and down to
-            % upper/lower uncertainty bounds to create train means
-            for i = 1:size(tempMeans, 1)
-                
-                % compute upper and lower bounds
-                mean = tempMeans(i, 1);
-                shift = uncertainty * mean;
-                upper = mean + shift;
-                lower = mean - shift;
-                
-                % create lower bound train point on odd indices
-                obj.HifiTrainPoints(2*i-1, 1:2) = tempPoints(i, 1:2);
-                obj.HifiTrainMeans(2*i-1, 1) = lower;
-                
-                % create upper bound train point on even indices
-                obj.HifiTrainPoints(2*i, 1:2) = tempPoints(i, 1:2);
-                obj.HifiTrainMeans(2*i, 1) = upper;
-                
-            end
+
+            % Take means at face value
+            obj.HifiTrainPoints = prior{1:end, 1:2};
+            obj.HifiTrainMeans = prior{1:end, 3};
             
             % Set size member
             obj.NumHifi = size(obj.HifiTrainMeans,1);
+            
         end
         
         function SavePrior(obj, filename, fidelity)
@@ -1304,20 +1260,12 @@ classdef HILGPC_Data < handle
            
            mat = zeros(obj.Environment.NumRobots, 2);
            map = obj.Environment.Positions;
-           oldmap = obj.Environment.Positions;
            
            for i = 1:obj.Environment.NumRobots
-               try
                    position = map(num2str(i));
                    x = position.Center.X;
                    y = position.Center.Y;
                    mat(i, 1:2) = [x,y];
-               catch
-                   position = oldmap(num2str(i));
-                   x = position.Center.X;
-                   y = position.Center.Y;
-                   mat(i, 1:2) = [x,y];
-               end
            end
            
            % returns simple nRobots x 2 matrix of x_i,y_i in ith row           

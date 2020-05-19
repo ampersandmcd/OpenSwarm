@@ -116,7 +116,7 @@ classdef Navigator < handle
                            speed = 0;
                            turnAngle = 0;
                        elseif distance < obj.Environment.FullSpeedThreshold
-                           speed = (distance/obj.Environment.FullSpeedThreshold) * 100;
+                           speed = (distance/obj.Environment.FullSpeedThreshold)^2 * 100;
                        else
                            speed = 100;
                        end

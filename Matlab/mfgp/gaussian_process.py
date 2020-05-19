@@ -16,13 +16,13 @@ from scipy.optimize import differential_evolution
 # A minimal Gaussian process class
 class GP:
     # Initialize the class
-    def __init__(self, X, y):
+    def __init__(self, X, y, len):
         self.D = X.shape[1]
         self.X = X
         self.y = y
         
 
-        self.hyp = self.init_params()
+        self.hyp = self.init_params(len)
 
         self.jitter = 1e-8
 
@@ -30,11 +30,15 @@ class GP:
         print("Total number of parameters: %d" % (self.hyp.shape[0]))
 
     # Initialize hyper-parameters
-    def init_params(self):
+    def init_params(self, len):
         hyp = np.log(np.ones(self.D + 1))
         self.idx_theta = np.arange(hyp.shape[0])
         logsigma_n = np.array([-4.0])
         hyp = np.concatenate([hyp, logsigma_n])
+
+        # manually override starting lengthscale values to accelerate convergence
+        hyp[2] = np.log(len)
+
         return hyp
 
     # A simple vectorized rbf kernel
@@ -149,7 +153,7 @@ class GP:
 # A minimal GP multi-fidelity class (two levels of fidelity)
 class Multifidelity_GP:
     # Initialize the class
-    def __init__(self, X_L, y_L, X_H, y_H):
+    def __init__(self, X_L, y_L, X_H, y_H, len_L, len_H):
         self.D = X_H.shape[1]
         self.X_L = X_L
         self.y_L = y_L
@@ -157,13 +161,13 @@ class Multifidelity_GP:
         self.y_H = y_H
         self.L = np.empty([0,0])
 
-        self.hyp = self.init_params()
+        self.hyp = self.init_params(len_L, len_H)
         print("Total number of parameters: %d" % (self.hyp.shape[0]))
 
         self.jitter = 1e-8
 
     # Initialize hyper-parameters
-    def init_params(self):
+    def init_params(self, len_L, len_H):
         hyp = np.ones(self.D + 1)
         hyp[0] = 0
         self.idx_theta_L = np.arange(hyp.shape[0])
@@ -174,6 +178,11 @@ class Multifidelity_GP:
         rho = np.array([1.0])
         sigma_n = np.array([0.01, 0.01])
         hyp = np.concatenate([hyp, rho, sigma_n])
+
+        # manually override starting lengthscale values to accelerate convergence
+        hyp[2] = np.log(len_L)
+        hyp[5] = np.log(len_H)
+
         return hyp
 
     # A simple vectorized rbf kernel

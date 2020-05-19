@@ -29,7 +29,7 @@ classdef Environment < handle
     end
     
     methods
-        function obj = Environment(inputNumRobots, bounds, isSimulation, maxIteration)
+        function obj = Environment(inputNumRobots, bounds, pad, isSimulation, maxIteration)
             %Environment:
             %   Construct an environment object
                                     
@@ -53,15 +53,15 @@ classdef Environment < handle
             obj.Iteration = 1;      
             obj.UDPTransmission = true;
             obj.UDPReception = true;
-            obj.ConvergenceThreshold = 5;
-            obj.FullSpeedThreshold = 25;
+            obj.ConvergenceThreshold = 0.01;
+            obj.FullSpeedThreshold = 0.1;
             obj.Delay = 0;
             obj.GoHome = true;
-            obj.EdgeGuard = 50;
+            obj.EdgeGuard = pad;
             
             % construct simulated robots if simulated
             % set random seed for start position reproducibility
-            rng(100);
+            rng(1);
             if obj.IsSimulation
                 for i = 1:obj.NumRobots
                     obj.RobotSims{i,1} = RobotSim(i, obj);

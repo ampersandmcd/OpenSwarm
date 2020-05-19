@@ -7,6 +7,7 @@ classdef RobotSim
         Id              % int identifier of this simulated robot
         Position        % Position object describing the current robot
         SpeedCoeff      % Number of coordinate units moved in one 100-power burst
+        Threshold
     end
     
     methods
@@ -15,7 +16,7 @@ classdef RobotSim
             %ROBOTSIM Construct an instance of a simulated robot
 
             obj.Id = id;
-            obj.SpeedCoeff = 0.25;
+            obj.SpeedCoeff = 0.001;
             
             % randomly perturb startX to converge to different solutions
             % startX is in [100*id-25, 100*id+25]
@@ -28,8 +29,10 @@ classdef RobotSim
             % conditions
             startX = (environment.XAxisSize - 2 * environment.EdgeGuard) * rand(1) + environment.EdgeGuard;
             startY = (environment.YAxisSize - 2 * environment.EdgeGuard) * rand(1) + environment.EdgeGuard;
-            
+                    
             obj.Position = Position.SimPosition(startX, startY, 90);
+            
+            obj.Threshold = environment.FullSpeedThreshold;
         end
         
         function obj = Drive(obj, burst)

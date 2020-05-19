@@ -15,16 +15,13 @@ import matlab
 from matplotlib import cm
 import numpy
 from pyDOE import lhs
-from gaussian_process import Multifidelity_GP
+from gaussian_process import Multifidelity_GP, GP
 from mpl_toolkits.mplot3d.axes3d import Axes3D
 from scipy.optimize import differential_evolution
 # import seaborn as sns
 # from concorde.tsp import TSPSolver
 from scipy.spatial import distance_matrix
 import sys
-
-
-np.random.seed(1234)
 
 
 def init_MFGP():
@@ -44,7 +41,9 @@ def init_MFGP():
     y_L = np.empty([0, 1])
     X_H = np.empty([0, 2])
     y_H = np.empty([0, 1])
-    model = Multifidelity_GP(X_L, y_L, X_H, y_H)
+    len_L = 0
+    len_H = 0
+    model = Multifidelity_GP(X_L, y_L, X_H, y_H, len_L, len_H)
     model.hyp = numpy.loadtxt('cov_hyp.txt')
     return model
 
@@ -107,17 +106,43 @@ if __name__ == "__main__":
     # store HiFi points in hifi.csv
     # return new hyperparameters and save in cov_hyp.txt if valid
 
-    lofi = numpy.loadtxt('lofi.csv', skiprows=1, delimiter=',')
-    hifi = numpy.loadtxt('hifi.csv', skiprows=1, delimiter=',')
+    np.random.seed(1234)
+    mf = True
 
-    X_L = lofi[:, 0:2].reshape(-1, 2)      # columns 1 and 2 are (x,y) points
-    y_L = lofi[:, 2].reshape(-1, 1)        # column 3 is f(x,y)
-    X_H = hifi[:, 0:2].reshape(-1, 2)
-    y_H = hifi[:, 2].reshape(-1, 1)
+    lofi = np.loadtxt('hifi.csv', skiprows=1, delimiter=',')
+    hifi = np.loadtxt('hifi.csv', skiprows=1, delimiter=',')
+    labels = []
 
-    model = Multifidelity_GP(X_L, y_L, X_H, y_H)
+    if mf:
+        X_L = lofi[:, 0:2].reshape(-1, 2)  # columns 1 and 2 are (x,y) points
+        y_L = lofi[:, 2].reshape(-1, 1)  # column 3 is f(x,y)
+        X_H = hifi[:, 0:2].reshape(-1, 2)
+        y_H = hifi[:, 2].reshape(-1, 1)
+
+        len_L = 0.2
+        len_H = 0.05
+
+        model = Multifidelity_GP(X_L, y_L, X_H, y_H, len_L, len_H)
+        labels = ['mu_lo', 's^2_lo', 'L_lo', 'mu_hi', 's^2_hi', 'L_hi', 'rho', 'noise_lo', 'noise_hi']
+
+    else:
+        data = np.vstack((lofi, hifi))
+        X = data[:, 0:2].reshape(-1, 2)  # columns 1 and 2 are (x,y) points
+        y = data[:, 2].reshape(-1, 1)  # column 3 is f(x,y)
+
+        len_sf = 0.1
+
+        model = GP(X, y, len_sf)
+        labels = ['mu_sf', 's^2_sf', 'L_sf', 'noise_sf']
+
+
+
     model.train()
-    print(model.hyp);
+
+    # print output of model
+    eh = np.exp(model.hyp)
+    for i in range(len(labels)):
+        print(labels[i] + ' : ' + str(eh[i]))
 
     fname = input("Filename to save hyperparameters to: ")
     np.savetxt(fname, model.hyp, delimiter='\n')
